@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>农产品平台登录页</title>
+    <style>
+        /* 全局样式重置与基础配置 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        body {
+            background-color: #f5f5f5;
+            min-height: 100vh;
+        }
+        /* 页面模块通用样式 */
+        .page-section {
+            display: none;
+            width: 100%;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .page-section.active {
+            display: flex;
+        }
+
+        /* 1. 欢迎页（底部注册登录按钮） */
+        #welcomeSection {
+            flex-direction: column;
+            justify-content: flex-end;
+            gap: 16px;
+            padding-bottom: 40px;
+        }
+        .welcome-btn {
+            width: 100%;
+            height: 52px;
+            border-radius: 8px;
+            font-size: 18px;
+            cursor: pointer;
+            border: none;
+        }
+        .btn-primary {
+            background-color: #007AFF;
+            color: #fff;
+        }
+        .btn-default {
+            background-color: #fff;
+            color: #000;
+            border: 1px solid #e5e7eb;
+        }
+
+        /* 2. 登录表单容器 */
+        #loginContainer {
+            flex-direction: column;
+            align-items: center;
+            padding-top: 40px;
+        }
+        .login-card {
+            width: 100%;
+            max-width: 360px;
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 24px;
+            display: none;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .login-card.active {
+            display: flex;
+        }
+
+        /* 头像触发按钮 - 关键修改：新增头像显示样式 */
+        .avatar-trigger-wrap {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 12px;
+        }
+        .avatar-add-btn {
+            width: 80px;
+            height: 80px;
+            border-radius: 8px;
+            border: none;
+            background-color: #f5f5f5;
+            font-size: 24px;
+            color: #333;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            /* 新增：支持背景图片显示 */
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+        /* 新增：选中头像后隐藏+号 */
+        .avatar-add-btn.has-avatar {
+            font-size: 0;
+        }
+
+        /* 表单输入框样式 */
+        .form-input {
+            width: 100%;
+            height: 40px;
+            padding: 0 12px;
+            border: none;
+            border-radius: 4px;
+            background-color: #f5f5f5;
+            font-size: 14px;
+        }
+
+        /* 登录按钮 */
+        .login-btn {
+            width: 100%;
+            height: 40px;
+            border: none;
+            border-radius: 20px;
+            background-color: #dcfce7;
+            color: #166534;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+        .login-btn:disabled {
+            background-color: #eee;
+            color: #999;
+            cursor: not-allowed;
+        }
+
+        /* 登录方式切换文本 */
+        .login-switch-text {
+            text-align: center;
+            font-size: 14px;
+            color: #666;
+            margin: 8px 0;
+            cursor: pointer;
+        }
+
+        /* 协议勾选区域 */
+        .agreement-wrap {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 12px;
+            color: #999;
+            margin-top: 16px;
+        }
+
+        /* 3. 头像上传页面 */
+        #avatarSection {
+            flex-direction: column;
+            align-items: center;
+            padding-top: 40px;
+        }
+        .avatar-card {
+            width: 100%;
+            max-width: 360px;
+            background-color: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .avatar-back-btn {
+            width: 40px;
+            height: 40px;
+            border: none;
+            background: transparent;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .avatar-grid-wrap {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .avatar-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 2px;
+            background-color: #eee;
+        }
+        .grid-item {
+            aspect-ratio: 1/1;
+            background-color: #ddd;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            cursor: pointer;
+        }
+        .grid-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .grid-add-btn {
+            font-size: 24px;
+            color: #333;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            width: 100%;
+            height: 100%;
+        }
+        .grid-tip {
+            font-size: 12px;
+            color: #999;
+            padding: 8px 12px;
+            text-align: right;
+        }
+    </style>
+</head>
+<body>
+    <!-- 欢迎页（注册登录入口） -->
+    <section id="welcomeSection" class="page-section active">
+        <button class="welcome-btn btn-primary" id="signUpBtn">Sign up</button>
+        <button class="welcome-btn btn-default" id="loginBtn">Log in</button>
+    </section>
+
+    <!-- 登录容器 -->
+    <section id="loginContainer" class="page-section">
+        <!-- 验证码登录页（已移除短信验证相关） -->
+        <div id="codeLoginCard" class="login-card active">
+            <div class="avatar-trigger-wrap">
+                <button type="button" class="avatar-add-btn" id="avatarTrigger">+</button>
+            </div>
+            <input type="text" class="form-input" placeholder="请输入姓名" id="codeUserName">
+            <input type="tel" class="form-input" placeholder="请输入手机号" id="codePhone">
+            <span class="login-switch-text" id="toPwdLogin">点击密码登录</span>
+            <button type="button" class="login-btn" id="codeLoginBtn" disabled>登录</button>
+            <label class="agreement-wrap">
+                <input type="checkbox" id="codeAgreement">
+                <span>我已阅读并同意用户协议与隐私政策</span>
+            </label>
+        </div>
+
+        <!-- 密码登录页 -->
+        <div id="pwdLoginCard" class="login-card">
+            <div class="avatar-trigger-wrap">
+                <button type="button" class="avatar-add-btn" id="avatarTrigger2">+</button>
+            </div>
+            <input type="text" class="form-input" placeholder="请输入姓名" id="pwdUserName">
+            <input type="password" class="form-input" placeholder="请输入密码" id="pwdInput">
+            <span class="login-switch-text" id="toCodeLogin">点击验证码登录</span>
+            <button type="button" class="login-btn" id="pwdLoginBtn" disabled>登录</button>
+            <label class="agreement-wrap">
+                <input type="checkbox" id="pwdAgreement">
+                <span>我已阅读并同意用户协议与隐私政策</span>
+            </label>
+        </div>
+    </section>
+
+    <!-- 头像上传页 -->
+    <section id="avatarSection" class="page-section">
+        <div class="avatar-card">
+            <button type="button" class="avatar-back-btn" id="avatarBackBtn">←</button>
+            <div class="avatar-grid-wrap">
+                <div class="avatar-grid">
+                    <div class="grid-item">
+                        <button type="button" class="grid-add-btn" id="uploadAvatarBtn">+</button>
+                    </div>
+                    <div class="grid-item" data-avatar="https://picsum.photos/200/200?random=1">
+                        <img src="https://picsum.photos/200/200?random=1" alt="头像">
+                    </div>
+                    <div class="grid-item" data-avatar="https://picsum.photos/200/200?random=2">
+                        <img src="https://picsum.photos/200/200?random=2" alt="头像">
+                    </div>
+                    <div class="grid-item" data-avatar="https://picsum.photos/200/200?random=3">
+                        <img src="https://picsum.photos/200/200?random=3" alt="头像">
+                    </div>
+                    <div class="grid-item" data-avatar="https://picsum.photos/200/200?random=4">
+                        <img src="https://picsum.photos/200/200?random=4" alt="头像">
+                    </div>
+                </div>
+                <div class="grid-tip">可上下滑动</div>
+            </div>
+        </div>
+    </section>
+
+    <script>
+        // ===================== 核心配置（请修改为你的后端地址） =====================
+        const API_BASE_URL = 'http://localhost:8080'; // 后端服务根地址
+        // =========================================================================
+
+        // 元素获取
+        const welcomeSection = document.getElementById('welcomeSection');
+        const loginContainer = document.getElementById('loginContainer');
+        const avatarSection = document.getElementById('avatarSection');
+        const codeLoginCard = document.getElementById('codeLoginCard');
+        const pwdLoginCard = document.getElementById('pwdLoginCard');
+        // 关键修改：获取两个头像按钮
+        const avatarTrigger = document.getElementById('avatarTrigger');
+        const avatarTrigger2 = document.getElementById('avatarTrigger2');
+        // 全局变量：存储选中的头像URL
+        let selectedAvatarUrl = '';
+
+        // 1. 欢迎页交互：注册/登录按钮跳转
+        document.getElementById('signUpBtn').addEventListener('click', () => {
+            alert('注册功能待实现，暂跳转到登录页');
+            welcomeSection.classList.remove('active');
+            loginContainer.classList.add('active');
+        });
+        document.getElementById('loginBtn').addEventListener('click', () => {
+            welcomeSection.classList.remove('active');
+            loginContainer.classList.add('active');
+        });
+
+        // 2. 登录方式切换
+        document.getElementById('toPwdLogin').addEventListener('click', () => {
+            codeLoginCard.classList.remove('active');
+            pwdLoginCard.classList.add('active');
+            // 关键修改：切换登录方式时同步头像
+            syncAvatarDisplay();
+        });
+        document.getElementById('toCodeLogin').addEventListener('click', () => {
+            pwdLoginCard.classList.remove('active');
+            codeLoginCard.classList.add('active');
+            // 关键修改：切换登录方式时同步头像
+            syncAvatarDisplay();
+        });
+
+        // 3. 头像页面交互
+        const toAvatarPage = () => {
+            loginContainer.classList.remove('active');
+            avatarSection.classList.add('active');
+        };
+        avatarTrigger.addEventListener('click', toAvatarPage);
+        avatarTrigger2.addEventListener('click', toAvatarPage);
+        document.getElementById('avatarBackBtn').addEventListener('click', () => {
+            avatarSection.classList.remove('active');
+            loginContainer.classList.add('active');
+        });
+
+        // 关键修改：新增函数 - 同步显示选中的头像到按钮
+        function syncAvatarDisplay() {
+            if (selectedAvatarUrl) {
+                // 给按钮设置背景图片，并添加标识类隐藏+号
+                avatarTrigger.style.backgroundImage = `url(${selectedAvatarUrl})`;
+                avatarTrigger.classList.add('has-avatar');
+                avatarTrigger2.style.backgroundImage = `url(${selectedAvatarUrl})`;
+                avatarTrigger2.classList.add('has-avatar');
+            } else {
+                // 无选中头像时恢复默认样式
+                avatarTrigger.style.backgroundImage = '';
+                avatarTrigger.classList.remove('has-avatar');
+                avatarTrigger2.style.backgroundImage = '';
+                avatarTrigger2.classList.remove('has-avatar');
+            }
+        }
+
+        // 4. 头像选择/上传交互 - 关键修改
+        const avatarItems = document.querySelectorAll('.grid-item[data-avatar]');
+        avatarItems.forEach(item => {
+            item.addEventListener('click', () => {
+                selectedAvatarUrl = item.getAttribute('data-avatar');
+                // 同步显示头像到按钮
+                syncAvatarDisplay();
+                // 提示并返回登录页
+                alert(`已选择头像：${selectedAvatarUrl}`);
+                avatarSection.classList.remove('active');
+                loginContainer.classList.add('active');
+            });
+        });
+
+        // 关键修改：上传头像并实时显示
+        document.getElementById('uploadAvatarBtn').addEventListener('click', () => {
+            const fileInput = document.createElement('input');
+            fileInput.type = 'file';
+            fileInput.accept = 'image/*';
+            fileInput.onchange = (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    // 创建文件预览URL
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        selectedAvatarUrl = event.target.result;
+                        // 同步显示上传的头像到按钮
+                        syncAvatarDisplay();
+                        alert(`已选择上传头像：${file.name}`);
+                        avatarSection.classList.remove('active');
+                        loginContainer.classList.add('active');
+                    };
+                    reader.readAsDataURL(file);
+                }
+            };
+            fileInput.click();
+        });
+
+        // 5. 协议勾选与登录按钮联动
+        const codeAgreement = document.getElementById('codeAgreement');
+        const codeLoginBtn = document.getElementById('codeLoginBtn');
+        codeAgreement.addEventListener('change', () => {
+            codeLoginBtn.disabled = !codeAgreement.checked;
+        });
+        const pwdAgreement = document.getElementById('pwdAgreement');
+        const pwdLoginBtn = document.getElementById('pwdLoginBtn');
+        pwdAgreement.addEventListener('change', () => {
+            pwdLoginBtn.disabled = !pwdAgreement.checked;
+        });
+
+        // 6. 验证码登录（已移除短信验证） - 调用后端接口
+        codeLoginBtn.addEventListener('click', async () => {
+            const userName = document.getElementById('codeUserName').value.trim();
+            const phone = document.getElementById('codePhone').value.trim();
+
+            // 前端基础校验
+            if (!userName) {
+                alert('请输入姓名');
+                return;
+            }
+            if (!phone || !/^1[3-9]\d{9}$/.test(phone)) {
+                alert('请输入有效的手机号');
+                return;                     
+            }
+
+            try {
+                // 请求后端登录接口（建议根据实际需求调整接口参数）
+                const response = await fetch(`${API_BASE_URL}/api/login/phone`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        username: userName,
+                        phone: phone,
+                        avatar: selectedAvatarUrl // 关键修改：携带头像URL到后端
+                    })
+                });
+
+                const result = await response.json();
+                // 登录成功：存储用户信息 + 跳转主页面（index.html）
+                if (response.ok && result.code === 200) {
+                    localStorage.setItem('userInfo', JSON.stringify(result.data));
+                    alert('手机号登录成功！即将跳转到首页');
+                    window.location.href = 'goods.html';
+                } else {
+                    // 登录失败：提示错误信息
+                    alert(`登录失败：${result.msg || '手机号不存在或信息错误'}`);
+                }
+            } catch (error) {
+                // 网络异常处理
+                console.error('登录请求失败：', error);
+                alert('网络异常，请检查后端服务是否启动');
+            }
+        });
+
+        // 7. 密码登录 - 调用后端接口
+        pwdLoginBtn.addEventListener('click', async () => {
+            const userName = document.getElementById('pwdUserName').value.trim();
+            const password = document.getElementById('pwdInput').value.trim();
+
+            // 前端基础校验
+            if (!userName) {
+                alert('请输入姓名');
+                return;
+            }
+            if (!password) {
+                alert('请输入密码');
+                return;
+            }
+
+            try {
+                // 请求后端密码登录接口
+                const response = await fetch(`${API_BASE_URL}/api/login/password`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        username: userName,
+                        password: password,
+                        avatar: selectedAvatarUrl // 关键修改：携带头像URL到后端
+                    })
+                });
+
+                const result = await response.json();
+                // 登录成功：存储用户信息 + 跳转主页面（index.html）
+                if (response.ok && result.code === 200) {
+                    localStorage.setItem('userInfo', JSON.stringify(result.data));
+                    alert('密码登录成功！即将跳转到首页');
+                    window.location.href = 'index.html';
+                } else {
+                    // 登录失败：提示错误信息
+                    alert(`登录失败：${result.msg || '用户名或密码错误'}`);
+                }
+            } catch (error) {
+                // 网络异常处理
+                console.error('登录请求失败：', error);
+                alert('网络异常，请检查后端服务是否启动');
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,800 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>农产品展示与发布平台 - 发布农产品</title>
+    <style>
+        /* 基础样式重置 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+        }
+        body {
+            background-color: #f5f5f5;
+            font-size: 14px;
+            color: #333;
+        }
+        /* 通用弹窗样式 */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 999;
+        }
+        .modal .content {
+            width: 85%;
+            background-color: #fff;
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .modal .content .title {
+            font-size: 16px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .modal .btn-group {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 20px;
+        }
+        .modal .btn-group button {
+            width: 48%;
+            height: 40px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 15px;
+        }
+        .modal .cancel {
+            background-color: #f5f5f5;
+            color: #666;
+        }
+        .modal .confirm {
+            background-color: #0088ff;
+            color: #fff;
+        }
+        /* Toast提示 */
+        .toast {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 10px 20px;
+            background-color: rgba(0,0,0,0.7);
+            color: #fff;
+            border-radius: 4px;
+            font-size: 14px;
+            z-index: 1000;
+            display: none;
+        }
+
+        /* ========== 发布页面样式 ========== */
+        .publish-page {
+            background-color: #f9f9f9;
+        }
+        .publish-top-bar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 15px;
+            background-color: #fff;
+            border-bottom: 1px solid #eee;
+            position: sticky;
+            top: 0;
+            z-index: 90;
+        }
+        .publish-back {
+            font-size: 18px;
+            color: #333;
+            cursor: pointer;
+        }
+        .publish-type-select select {
+            border: none;
+            outline: none;
+            background: transparent;
+            font-size: 15px;
+            color: #333;
+            padding-right: 15px;
+            appearance: none;
+            background: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='6'%3E%3Cpath fill='%23666' d='M0 0l6 6 6-6z'/%3E%3C/svg%3E") no-repeat right center;
+        }
+        .publish-submit-btn {
+            font-size: 15px;
+            color: #0088ff;
+            cursor: pointer;
+            padding: 5px 10px;
+        }
+        .publish-form-wrap {
+            padding: 10px 15px;
+        }
+        .publish-img-upload {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .publish-img-item {
+            width: 80px;
+            height: 80px;
+            border-radius: 8px;
+            overflow: hidden;
+            background-color: #fff;
+            border: 1px dashed #ddd;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+        }
+        .publish-img-item.add {
+            font-size: 24px;
+            color: #999;
+            cursor: pointer;
+        }
+        .publish-img-item.has-img {
+            border: none;
+        }
+        .publish-img-item.has-img img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .publish-img-item .delete-img {
+            position: absolute;
+            top: -5px;
+            right: -5px;
+            width: 20px;
+            height: 20px;
+            background-color: rgba(255,0,0,0.8);
+            color: #fff;
+            border-radius: 50%;
+            font-size: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            display: none;
+        }
+        .publish-img-item.has-img:hover .delete-img {
+            display: flex;
+        }
+        #publishFileInput {
+            display: none;
+        }
+        .publish-form-row {
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 12px 15px;
+            margin-bottom: 10px;
+        }
+        .form-row-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #f5f5f5;
+        }
+        .form-row-item:last-child {
+            border-bottom: none;
+        }
+        .form-label {
+            font-size: 14px;
+            color: #333;
+        }
+        .form-value {
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+            color: #666;
+        }
+        .form-value input {
+            border: none;
+            outline: none;
+            text-align: right;
+            font-size: 14px;
+            color: #333;
+            background: transparent;
+            padding: 2px 0;
+            width: 100%;
+        }
+        .count-limit {
+            font-size: 12px;
+            color: #999;
+            margin-top: 5px;
+            text-align: right;
+        }
+        .form-textarea {
+            width: 100%;
+            border: none;
+            outline: none;
+            resize: none;
+            font-size: 14px;
+            color: #333;
+            background: transparent;
+            min-height: 60px;
+            padding: 5px 0;
+        }
+        .price-type-modal .content, .price-select-modal .content, .address-select-modal .content {
+            padding: 15px;
+        }
+        .price-type-item {
+            padding: 10px;
+            text-align: center;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            cursor: pointer;
+        }
+        .price-type-item.active {
+            background-color: #f0f8ff;
+            color: #0088ff;
+            border: 1px solid #0088ff;
+        }
+        .price-type-item.normal {
+            background-color: #f5f5f5;
+            color: #666;
+            border: 1px solid #eee;
+        }
+        .price-select-input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            font-size: 16px;
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        /* 地址选择弹窗 - 地址输入框样式 */
+        .address-input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #eee;
+            border-radius: 8px;
+            font-size: 14px;
+            color: #333;
+            outline: none;
+            transition: all 0.2s ease;
+            background-color: #f9f9f9;
+            margin-bottom: 15px;
+        }
+        .address-input::placeholder {
+            color: #999;
+            font-size: 13px;
+        }
+        .address-input:focus {
+            border-color: #0088ff;
+            background-color: #fff;
+            box-shadow: 0 0 0 2px rgba(0, 136, 255, 0.1);
+        }
+        .address-input:hover {
+            border-color: #ddd;
+        }
+        /* 地址选择弹窗 - 定位按钮样式 */
+        .location-btn {
+            width: 100%;
+            padding: 12px 10px;
+            background-color: #f0f8ff;
+            border: 1px solid #e6f7ff;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 14px;
+            color: #0088ff;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .location-btn:hover {
+            background-color: #e6f7ff;
+            border-color: #91d5ff;
+        }
+        /* 地址提示文字样式 */
+        .address-tips {
+            font-size: 12px;
+            color: #999;
+            line-height: 1.4;
+            margin-bottom: 15px;
+            padding-left: 2px;
+        }
+
+        /* ========== 底部Tab栏样式 ========== */
+        .tab-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            display: flex;
+            background-color: #fff;
+            border-top: 1px solid #eee;
+            padding: 5px 0;
+        }
+        .tab-bar .tab-item {
+            flex: 1;
+            text-align: center;
+            cursor: pointer;
+        }
+        .tab-bar .tab-item .icon {
+            font-size: 20px;
+            margin-bottom: 3px;
+            display: block;
+        }
+        .tab-bar .tab-item .text {
+            font-size: 12px;
+            color: #666;
+        }
+        .tab-bar .tab-item.active .text {
+            color: #0088ff;
+        }
+        .container {
+            padding-bottom: 60px;
+        }
+    </style>
+</head>
+<body class="publish-page">
+    <!-- 发布页面主体 -->
+    <div class="container">
+        <!-- 顶部栏 -->
+        <div class="publish-top-bar">
+            <div class="publish-back" id="publishBackBtn">←</div>
+            <div class="publish-type-select">
+                <select id="productTypeSelect">
+                    <option value="蔬菜">蔬菜</option>
+                    <option value="水果">水果</option>
+                    <option value="肉食">肉食</option>
+                    <option value="乳饮">乳饮</option>
+                    <option value="零食">零食</option>
+                </select>
+            </div>
+            <div class="publish-submit-btn" id="publishSubmitBtn">发布</div>
+        </div>
+
+        <!-- 表单主体 -->
+        <div class="publish-form-wrap">
+            <!-- 图片上传 -->
+            <div class="publish-img-upload">
+                <div class="publish-img-item has-img" id="previewImgItem" style="display: none;">
+                    <img src="" id="previewImg" alt="农产品图片">
+                    <div class="delete-img" id="deleteImgBtn">×</div>
+                </div>
+                <div class="publish-img-item add" id="addImgBtn">+</div>
+                <input type="file" id="publishFileInput" accept="image/*">
+            </div>
+
+            <!-- 价格与计价方式 -->
+            <div class="publish-form-row">
+                <div class="form-row-item" id="priceRow">
+                    <div class="form-label">价格</div>
+                    <div class="form-value">
+                        <span class="price-text" id="showPrice">¥0.00</span>
+                        <span class="arrow">></span>
+                    </div>
+                </div>
+                <div class="form-row-item" id="priceTypeRow">
+                    <div class="form-label">计价方式</div>
+                    <div class="form-value">
+                        <span id="showPriceType">以件计价</span>
+                        <span class="arrow">></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 发货地址 -->
+            <div class="publish-form-row">
+                <div class="form-row-item" id="addressRow">
+                    <div class="form-label">发货地址</div>
+                    <div class="form-value">
+                        <span id="showAddress">一键定位</span>
+                        <span class="arrow">></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 联系方式 -->
+            <div class="publish-form-row">
+                <div class="form-row-item">
+                    <div class="form-label">联系方式</div>
+                    <div class="form-value">
+                        <input type="tel" id="contactInput" placeholder="请输入手机号码/微信">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 农产品名称 -->
+            <div class="publish-form-row">
+                <div class="form-row-item">
+                    <div class="form-label">这是什么农产品？</div>
+                    <div class="form-value" style="width: 100%;">
+                        <input type="text" id="productNameInput" placeholder="请输入农产品名称" maxlength="25">
+                        <div class="count-limit" id="nameCount">0/25</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 详细描述 -->
+            <div class="publish-form-row">
+                <div class="form-row-item">
+                    <div class="form-label">详细描述一下吧？</div>
+                    <div class="form-value" style="width: 100%;">
+                        <textarea class="form-textarea" id="productDescInput" placeholder="请输入农产品详细描述" maxlength="100"></textarea>
+                        <div class="count-limit" id="descCount">0/100</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 品类规格等信息 -->
+            <div class="publish-form-row">
+                <div class="form-row-item">
+                    <div class="form-label">品类</div>
+                    <div class="form-value">
+                        <input type="text" id="productCategoryInput" placeholder="例如：黄心白菜">
+                    </div>
+                </div>
+                <div class="form-row-item">
+                    <div class="form-label">规格</div>
+                    <div class="form-value">
+                        <input type="text" id="productSpecInput" placeholder="例如：500g-550g/份">
+                    </div>
+                </div>
+                <div class="form-row-item">
+                    <div class="form-label">保质期</div>
+                    <div class="form-value">
+                        <input type="text" id="productShelfLifeInput" placeholder="例如：三天">
+                    </div>
+                </div>
+                <div class="form-row-item">
+                    <div class="form-label">包装方式</div>
+                    <div class="form-value">
+                        <input type="text" id="productPackageInput" placeholder="例如：袋装">
+                    </div>
+                </div>
+                <div class="form-row-item">
+                    <div class="form-label">是否使用农药</div>
+                    <div class="form-value">
+                        <input type="text" id="productPesticideInput" placeholder="例如：否">
+                    </div>
+                </div>
+                <div class="form-row-item">
+                    <div class="form-label">保存方式</div>
+                    <div class="form-value">
+                        <input type="text" id="productStorageInput" placeholder="例如：常温">
+                    </div>
+                </div>
+                <div class="form-row-item">
+                    <div class="form-label">是否支持自提</div>
+                    <div class="form-value">
+                        <input type="text" id="productPickupInput" placeholder="例如：是">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 计价方式弹窗 -->
+    <div class="modal price-type-modal" id="priceTypeModal">
+        <div class="content">
+            <div class="price-type-title">选择计价方式</div>
+            <div class="price-type-list">
+                <div class="price-type-item active" data-type="以件计价">以件计价</div>
+                <div class="price-type-item normal" data-type="以斤计价">以斤计价</div>
+            </div>
+            <div class="btn-group">
+                <button class="cancel" id="priceTypeCancelBtn">取消</button>
+                <button class="confirm" id="priceTypeConfirmBtn">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 价格选择弹窗 -->
+    <div class="modal price-select-modal" id="priceSelectModal">
+        <div class="content">
+            <div class="title">选择价格</div>
+            <input type="number" class="price-select-input" id="priceInput" placeholder="0.00" step="0.01" min="0">
+            <div class="price-unit" id="priceUnitText">元/件</div>
+            <div class="btn-group">
+                <button class="cancel" id="priceCancelBtn">取消</button>
+                <button class="confirm" id="priceConfirmBtn">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 地址选择弹窗 -->
+    <div class="modal address-select-modal" id="addressSelectModal">
+        <div class="content">
+            <div class="title">选择您的地址</div>
+            <div class="location-btn" id="locationBtn">一键定位</div>
+            <input type="text" class="address-input" id="addressInput" placeholder="门牌号 例：6栋201室">
+            <div class="address-tips">试试粘贴寄件人寄件地址，可快速识别您的寄件信息</div>
+            <div class="btn-group">
+                <button class="cancel" id="addressCancelBtn">取消</button>
+                <button class="confirm" id="addressConfirmBtn">确定</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部Tab栏 -->
+    <div class="tab-bar">
+        <div class="tab-item" data-page="goods">
+            <span class="icon">🥬</span>
+            <span class="text">农产品</span>
+        </div>
+        <div class="tab-item active" data-page="publish">
+            <span class="icon">📤</span>
+            <span class="text">发布</span>
+        </div>
+        <div class="tab-item" data-page="mine">
+            <span class="icon">👤</span>
+            <span class="text">我的</span>
+        </div>
+    </div>
+
+    <!-- 提示弹窗 -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // ========== 全局变量 ==========
+        let uploadedImage = null; // 上传的图片文件
+        let currentPriceType = '以件计价'; // 当前计价方式
+        let currentPrice = 0; // 当前价格
+        let currentAddress = '一键定位'; // 当前地址
+
+        // ========== DOM元素缓存 ==========
+        const toast = document.getElementById('toast');
+        const publishBackBtn = document.getElementById('publishBackBtn');
+        const addImgBtn = document.getElementById('addImgBtn');
+        const publishFileInput = document.getElementById('publishFileInput');
+        const previewImgItem = document.getElementById('previewImgItem');
+        const previewImg = document.getElementById('previewImg');
+        const deleteImgBtn = document.getElementById('deleteImgBtn');
+        const priceRow = document.getElementById('priceRow');
+        const priceTypeRow = document.getElementById('priceTypeRow');
+        const addressRow = document.getElementById('addressRow');
+        const productNameInput = document.getElementById('productNameInput');
+        const nameCount = document.getElementById('nameCount');
+        const productDescInput = document.getElementById('productDescInput');
+        const descCount = document.getElementById('descCount');
+        const publishSubmitBtn = document.getElementById('publishSubmitBtn');
+        
+        // 计价方式弹窗元素
+        const priceTypeModal = document.getElementById('priceTypeModal');
+        const priceTypeItems = document.querySelectorAll('.price-type-item');
+        const priceTypeCancelBtn = document.getElementById('priceTypeCancelBtn');
+        const priceTypeConfirmBtn = document.getElementById('priceTypeConfirmBtn');
+        
+        // 价格选择弹窗元素
+        const priceSelectModal = document.getElementById('priceSelectModal');
+        const priceInput = document.getElementById('priceInput');
+        const priceUnitText = document.getElementById('priceUnitText');
+        const priceCancelBtn = document.getElementById('priceCancelBtn');
+        const priceConfirmBtn = document.getElementById('priceConfirmBtn');
+        const showPrice = document.getElementById('showPrice');
+        const showPriceType = document.getElementById('showPriceType');
+        
+        // 地址弹窗元素
+        const addressSelectModal = document.getElementById('addressSelectModal');
+        const locationBtn = document.getElementById('locationBtn');
+        const addressInput = document.getElementById('addressInput');
+        const addressCancelBtn = document.getElementById('addressCancelBtn');
+        const addressConfirmBtn = document.getElementById('addressConfirmBtn');
+        const showAddress = document.getElementById('showAddress');
+
+        // Tab栏元素
+        const tabItems = document.querySelectorAll('.tab-bar .tab-item');
+
+        // ========== 工具函数 ==========
+        // Toast提示
+        function showToast(message, duration = 2000) {
+            toast.textContent = message;
+            toast.style.display = 'block';
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, duration);
+        }
+
+        // ========== 图片上传逻辑 ==========
+        addImgBtn.addEventListener('click', () => {
+            publishFileInput.click();
+        });
+
+        publishFileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file || !file.type.startsWith('image/')) return;
+
+            uploadedImage = file;
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                previewImg.src = event.target.result;
+                previewImgItem.style.display = 'block';
+                addImgBtn.style.display = 'none';
+            };
+            reader.readAsDataURL(file);
+        });
+
+        // 删除图片
+        deleteImgBtn.addEventListener('click', () => {
+            uploadedImage = null;
+            previewImgItem.style.display = 'none';
+            addImgBtn.style.display = 'flex';
+            publishFileInput.value = '';
+        });
+
+        // ========== 字数限制逻辑 ==========
+        productNameInput.addEventListener('input', () => {
+            const len = productNameInput.value.length;
+            nameCount.textContent = `${len}/25`;
+        });
+
+        productDescInput.addEventListener('input', () => {
+            const len = productDescInput.value.length;
+            descCount.textContent = `${len}/100`;
+        });
+
+        // ========== 计价方式弹窗逻辑 ==========
+        priceTypeRow.addEventListener('click', () => {
+            priceTypeModal.style.display = 'flex';
+            priceTypeItems.forEach(item => {
+                item.className = item.dataset.type === currentPriceType 
+                    ? 'price-type-item active' 
+                    : 'price-type-item normal';
+            });
+        });
+
+        priceTypeItems.forEach(item => {
+            item.addEventListener('click', () => {
+                priceTypeItems.forEach(i => i.className = 'price-type-item normal');
+                item.className = 'price-type-item active';
+            });
+        });
+
+        priceTypeCancelBtn.addEventListener('click', () => {
+            priceTypeModal.style.display = 'none';
+        });
+
+        priceTypeConfirmBtn.addEventListener('click', () => {
+            const activeItem = document.querySelector('.price-type-item.active');
+            currentPriceType = activeItem.dataset.type;
+            showPriceType.textContent = currentPriceType;
+            priceUnitText.textContent = currentPriceType === '以件计价' ? '元/件' : '元/斤';
+            priceTypeModal.style.display = 'none';
+        });
+
+        // ========== 价格选择弹窗逻辑 ==========
+        priceRow.addEventListener('click', () => {
+            priceSelectModal.style.display = 'flex';
+            priceInput.value = currentPrice || '';
+            priceUnitText.textContent = currentPriceType === '以件计价' ? '元/件' : '元/斤';
+        });
+
+        priceCancelBtn.addEventListener('click', () => {
+            priceSelectModal.style.display = 'none';
+        });
+
+        priceConfirmBtn.addEventListener('click', () => {
+            const price = parseFloat(priceInput.value);
+            if (isNaN(price) || price < 0) {
+                showToast('请输入有效的价格');
+                return;
+            }
+            currentPrice = price;
+            showPrice.textContent = `¥${price.toFixed(2)}`;
+            priceSelectModal.style.display = 'none';
+        });
+
+        // ========== 地址选择弹窗逻辑 ==========
+        addressRow.addEventListener('click', () => {
+            addressSelectModal.style.display = 'flex';
+            addressInput.value = currentAddress === '一键定位' ? '' : currentAddress;
+        });
+
+        locationBtn.addEventListener('click', () => {
+            showToast('正在定位...');
+            setTimeout(() => {
+                currentAddress = '湖南省湘潭市岳塘区XX小区6栋201室';
+                addressInput.value = currentAddress;
+                showToast('定位成功');
+            }, 1500);
+        });
+
+        addressCancelBtn.addEventListener('click', () => {
+            addressSelectModal.style.display = 'none';
+        });
+
+        addressConfirmBtn.addEventListener('click', () => {
+            const address = addressInput.value.trim();
+            if (!address) {
+                showToast('请输入地址');
+                return;
+            }
+            currentAddress = address;
+            showAddress.textContent = address;
+            addressSelectModal.style.display = 'none';
+        });
+
+        // ========== 发布返回逻辑 ==========
+        publishBackBtn.addEventListener('click', () => {
+            window.location.href = 'goods.html';
+        });
+
+        // ========== 提交发布逻辑 ==========
+        publishSubmitBtn.addEventListener('click', () => {
+            // 表单验证
+            if (!uploadedImage) {
+                showToast('请上传农产品主图');
+                return;
+            }
+            if (!productNameInput.value.trim()) {
+                showToast('请输入农产品名称');
+                return;
+            }
+            if (currentPrice <= 0) {
+                showToast('请设置有效价格');
+                return;
+            }
+            if (!currentAddress || currentAddress === '一键定位') {
+                showToast('请选择发货地址');
+                return;
+            }
+
+            // 模拟发布成功
+            showToast('发布成功！');
+            resetPublishForm();
+            
+            // 返回商品列表页
+            setTimeout(() => {
+                window.location.href = 'goods.html';
+            }, 1500);
+        });
+
+        // ========== 重置发布表单 ==========
+        function resetPublishForm() {
+            uploadedImage = null;
+            previewImgItem.style.display = 'none';
+            addImgBtn.style.display = 'flex';
+            publishFileInput.value = '';
+            
+            productNameInput.value = '';
+            nameCount.textContent = '0/25';
+            productDescInput.value = '';
+            descCount.textContent = '0/100';
+            document.getElementById('contactInput').value = '';
+            document.getElementById('productSpecInput').value = '';
+            document.getElementById('productShelfLifeInput').value = '';
+            document.getElementById('productCategoryInput').value = '';
+            document.getElementById('productPackageInput').value = '';
+            document.getElementById('productPesticideInput').value = '';
+            document.getElementById('productStorageInput').value = '';
+            document.getElementById('productPickupInput').value = '';
+            
+            currentPrice = 0;
+            showPrice.textContent = '¥0.00';
+            currentPriceType = '以件计价';
+            showPriceType.textContent = '以件计价';
+            currentAddress = '一键定位';
+            showAddress.textContent = '一键定位';
+        }
+
+        // ========== Tab栏跳转逻辑 ==========
+        tabItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const targetPage = item.dataset.page;
+                switch(targetPage) {
+                    case 'goods':
+                        window.location.href = 'goods.html';
+                        break;
+                    case 'publish':
+                        window.location.href = 'publish.html';
+                        break;
+                    case 'mine':
+                        window.location.href = 'mine.html';
+                        break;
+                }
+            });
+        });
+    </script>
+</body>
+</html>

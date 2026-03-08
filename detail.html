@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>农产品展示与发布平台 - 商品详情</title>
+    <style>
+        /* 基础样式重置 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+        }
+        body {
+            background-color: #f5f5f5;
+            font-size: 14px;
+            color: #333;
+        }
+        /* Toast提示 */
+        .toast {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 10px 20px;
+            background-color: rgba(0,0,0,0.7);
+            color: #fff;
+            border-radius: 4px;
+            font-size: 14px;
+            z-index: 1000;
+            display: none;
+        }
+
+        /* ========== 商品详情页样式 ========== */
+        .detail-page {
+            background-color: #fff;
+            padding-bottom: 10px;
+        }
+        .detail-header-bar {
+            position: sticky;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 10px 15px;
+            background-color: rgba(255,255,255,0.9);
+            z-index: 90;
+        }
+        .detail-back-btn {
+            font-size: 18px;
+            color: #333;
+            cursor: pointer;
+            display: inline-block;
+        }
+        .detail-img-swiper {
+            width: 100%;
+            height: 280px;
+            overflow: hidden;
+            position: relative;
+        }
+        .swiper-wrapper {
+            display: flex;
+            height: 100%;
+            transition: transform 0.3s ease;
+        }
+        .swiper-item {
+            flex: 0 0 100%;
+            height: 100%;
+        }
+        .swiper-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        .swiper-indicator {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 5px;
+        }
+        .indicator-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: rgba(255,255,255,0.6);
+        }
+        .indicator-dot.active {
+            background-color: #fff;
+        }
+        .detail-price-area {
+            padding: 15px;
+            border-bottom: 1px solid #f5f5f5;
+        }
+        .detail-price-wrap {
+            display: flex;
+            align-items: baseline;
+            gap: 5px;
+            margin-bottom: 5px;
+        }
+        .detail-price-num {
+            font-size: 22px;
+            color: #ff4400;
+            font-weight: bold;
+        }
+        .detail-sales {
+            font-size: 12px;
+            color: #999;
+            margin-bottom: 10px;
+        }
+        .detail-info-area, .detail-desc-area, .detail-contact-area {
+            padding: 15px;
+            border-bottom: 1px solid #f5f5f5;
+        }
+        .info-title {
+            font-size: 14px;
+            color: #666;
+            margin-bottom: 10px;
+        }
+        .info-item {
+            display: flex;
+            margin-bottom: 5px;
+        }
+        .info-label {
+            width: 80px;
+            color: #666;
+            flex-shrink: 0;
+        }
+        .view-all-btn {
+            margin-top: 10px;
+            text-align: right;
+            color: #0088ff;
+            font-size: 13px;
+            cursor: pointer;
+        }
+        .info-expand {
+            max-height: 100px;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+        .info-expand.show-all {
+            max-height: 500px;
+        }
+        .contact-card {
+            background-color: #f8f8f8;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .avatar {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background-color: #0088ff;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin-right: 10px;
+        }
+        .contact-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .contact-phone {
+            font-size: 14px;
+            color: #333;
+            margin-top: 5px;
+            padding-top: 5px;
+            border-top: 1px dashed #eee;
+        }
+        .contact-btn {
+            width: 100%;
+            height: 40px;
+            background-color: #00cc66;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body class="detail-page">
+    <!-- 返回栏 -->
+    <div class="detail-header-bar">
+        <span class="detail-back-btn" id="detailBackBtn">←</span>
+    </div>
+
+    <!-- 图片轮播 -->
+    <div class="detail-img-swiper" id="detailImgSwiper">
+        <div class="swiper-wrapper" id="swiperWrapper">
+            <!-- 动态填充图片 -->
+        </div>
+        <div class="swiper-indicator" id="swiperIndicator">
+            <!-- 动态填充指示器 -->
+        </div>
+    </div>
+
+    <!-- 价格区域 -->
+    <div class="detail-price-area">
+        <div class="detail-price-wrap">
+            <span class="detail-price-num" id="detailPriceNum">¥3.89</span>
+            <span class="detail-price-unit" id="detailPriceUnit">/份</span>
+        </div>
+        <div class="detail-sales" id="detailSales">已售300</div>
+        <div class="detail-product-name" id="detailProductName">500g-550g/份 云南小娃娃菜</div>
+    </div>
+
+    <!-- 产品信息 -->
+    <div class="detail-info-area">
+        <div class="info-title">产品信息</div>
+        <div class="info-list info-expand" id="infoExpand">
+            <div class="info-item">
+                <span class="info-label">品类：</span>
+                <span class="info-value" id="detailCategory">黄心白菜</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">规格：</span>
+                <span class="info-value" id="detailSpec">500g-550g/份</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">发货地：</span>
+                <span class="info-value" id="detailAddress">云南省昆明市乡村县</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">保质期：</span>
+                <span class="info-value" id="detailShelfLife">三天</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">包装方式：</span>
+                <span class="info-value" id="detailPackage">袋装</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">是否使用农药：</span>
+                <span class="info-value" id="detailPesticide">否</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">保存方式：</span>
+                <span class="info-value" id="detailStorage">常温</span>
+            </div>
+            <div class="info-item">
+                <span class="info-label">是否支持自提：</span>
+                <span class="info-value" id="detailPickup">是</span>
+            </div>
+        </div>
+        <div class="view-all-btn" id="viewAllBtn">查看全部</div>
+    </div>
+
+    <!-- 商品描述 -->
+    <div class="detail-desc-area">
+        <div class="info-title">商品描述</div>
+        <div class="desc-content" id="detailDescContent">
+            优质娃娃菜，现摘现邮。买后一天内发货。涮火锅炒菜都好吃！
+        </div>
+    </div>
+
+    <!-- 联系我们 -->
+    <div class="detail-contact-area">
+        <div class="contact-card">
+            <div class="contact-header">
+                <div class="avatar">我</div>
+                <div>
+                    <div class="contact-name" id="contactName">我是昵称</div>
+                    <div class="contact-address" id="contactAddress">云南省昆明市</div>
+                </div>
+            </div>
+            <div class="contact-phone" id="contactPhone">电话：122334455667</div>
+        </div>
+        <button class="contact-btn" id="contactBtn">联系卖家</button>
+    </div>
+
+    <!-- 提示弹窗 -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // ========== 模拟商品数据 ==========
+        const mockGoodsList = [
+            {
+                id: 1,
+                name: '500g-550g/份 云南小娃娃菜',
+                spec: '500g-550g/份',
+                price: 3.89,
+                address: '云南省昆明市乡村县',
+                stock: 300,
+                sales: 300,
+                category: '黄心白菜',
+                variety: '蔬菜',
+                shelf_life: '三天',
+                package_method: '袋装',
+                pesticide_used: '否',
+                storage_method: '常温',
+                support_pickup: '是',
+                description: '优质娃娃菜，现摘现邮。买后一天内发货。涮火锅炒菜都好吃！',
+                seller_name: '我是昵称',
+                seller_address: '云南省昆明市',
+                seller_phone: '122334455667',
+                images: [
+                    'https://picsum.photos/600/400?random=1',
+                    'https://picsum.photos/600/400?random=2',
+                    'https://picsum.photos/600/400?random=3'
+                ]
+            },
+            {
+                id: 2,
+                name: '新鲜山东大葱 1kg装',
+                spec: '1kg/份',
+                price: 8.99,
+                address: '山东省潍坊市寿光市',
+                stock: 500,
+                sales: 200,
+                category: '大葱',
+                variety: '蔬菜',
+                shelf_life: '七天',
+                package_method: '捆装',
+                pesticide_used: '否',
+                storage_method: '冷藏',
+                support_pickup: '是',
+                description: '新鲜现挖大葱，脆甜不辣，炒菜调味佳品！',
+                seller_name: '大葱种植户',
+                seller_address: '山东省潍坊市',
+                seller_phone: '13888889999',
+                images: [
+                    'https://picsum.photos/600/400?random=4',
+                    'https://picsum.photos/600/400?random=5'
+                ]
+            },
+            {
+                id: 3,
+                name: '烟台红富士苹果 5斤装',
+                spec: '5斤/份',
+                price: 29.9,
+                address: '山东省烟台市栖霞市',
+                stock: 1000,
+                sales: 500,
+                category: '红富士',
+                variety: '水果',
+                shelf_life: '30天',
+                package_method: '箱装',
+                pesticide_used: '否',
+                storage_method: '冷藏',
+                support_pickup: '是',
+                description: '新鲜烟台红富士，脆甜多汁，现摘现发！',
+                seller_name: '苹果种植户',
+                seller_address: '山东省烟台市',
+                seller_phone: '13977778888',
+                images: [
+                    'https://picsum.photos/600/400?random=6',
+                    'https://picsum.photos/600/400?random=7'
+                ]
+            }
+        ];
+
+        // ========== DOM元素缓存 ==========
+        const toast = document.getElementById('toast');
+        const detailBackBtn = document.getElementById('detailBackBtn');
+        const swiperWrapper = document.getElementById('swiperWrapper');
+        const swiperIndicator = document.getElementById('swiperIndicator');
+        const detailPriceNum = document.getElementById('detailPriceNum');
+        const detailPriceUnit = document.getElementById('detailPriceUnit');
+        const detailSales = document.getElementById('detailSales');
+        const detailProductName = document.getElementById('detailProductName');
+        const detailCategory = document.getElementById('detailCategory');
+        const detailSpec = document.getElementById('detailSpec');
+        const detailAddress = document.getElementById('detailAddress');
+        const detailShelfLife = document.getElementById('detailShelfLife');
+        const detailPackage = document.getElementById('detailPackage');
+        const detailPesticide = document.getElementById('detailPesticide');
+        const detailStorage = document.getElementById('detailStorage');
+        const detailPickup = document.getElementById('detailPickup');
+        const detailDescContent = document.getElementById('detailDescContent');
+        const contactName = document.getElementById('contactName');
+        const contactAddress = document.getElementById('contactAddress');
+        const contactPhone = document.getElementById('contactPhone');
+        const contactBtn = document.getElementById('contactBtn');
+        const viewAllBtn = document.getElementById('viewAllBtn');
+        const infoExpand = document.getElementById('infoExpand');
+
+        // ========== 工具函数 ==========
+        // Toast提示
+        function showToast(message, duration = 2000) {
+            toast.textContent = message;
+            toast.style.display = 'block';
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, duration);
+        }
+
+        // ========== 获取URL参数 ==========
+        function getUrlParam(name) {
+            const searchParams = new URLSearchParams(window.location.search);
+            return searchParams.get(name);
+        }
+
+        // ========== 渲染详情页数据 ==========
+        function renderDetailPage() {
+            const goodsId = getUrlParam('id');
+            if (!goodsId) {
+                showToast('商品ID不存在');
+                setTimeout(() => {
+                    window.location.href = 'goods.html';
+                }, 1500);
+                return;
+            }
+
+            // 查找对应商品
+            const goods = mockGoodsList.find(item => item.id == goodsId);
+            if (!goods) {
+                showToast('商品不存在');
+                setTimeout(() => {
+                    window.location.href = 'goods.html';
+                }, 1500);
+                return;
+            }
+
+            // 填充基本信息
+            detailPriceNum.textContent = `¥${goods.price.toFixed(2)}`;
+            detailPriceUnit.textContent = '/份';
+            detailSales.textContent = `已售${goods.sales}`;
+            detailProductName.textContent = goods.name;
+            detailCategory.textContent = goods.category;
+            detailSpec.textContent = goods.spec;
+            detailAddress.textContent = goods.address;
+            detailShelfLife.textContent = goods.shelf_life;
+            detailPackage.textContent = goods.package_method;
+            detailPesticide.textContent = goods.pesticide_used;
+            detailStorage.textContent = goods.storage_method;
+            detailPickup.textContent = goods.support_pickup;
+            detailDescContent.textContent = goods.description;
+            contactName.textContent = goods.seller_name;
+            contactAddress.textContent = goods.seller_address;
+            contactPhone.textContent = `电话：${goods.seller_phone}`;
+
+            // 渲染图片轮播
+            swiperWrapper.innerHTML = '';
+            swiperIndicator.innerHTML = '';
+            goods.images.forEach((imgUrl, index) => {
+                // 图片项
+                const swiperItem = document.createElement('div');
+                swiperItem.className = `swiper-item ${index === 0 ? 'active' : ''}`;
+                swiperItem.innerHTML = `<img src="${imgUrl}" alt="商品图片${index+1}">`;
+                swiperWrapper.appendChild(swiperItem);
+
+                // 指示器
+                const indicatorDot = document.createElement('div');
+                indicatorDot.className = `indicator-dot ${index === 0 ? 'active' : ''}`;
+                swiperIndicator.appendChild(indicatorDot);
+            });
+
+            // 图片轮播逻辑
+            let currentIndex = 0;
+            const totalImages = goods.images.length;
+            
+            // 自动轮播
+            setInterval(() => {
+                currentIndex = (currentIndex + 1) % totalImages;
+                swiperWrapper.style.transform = `translateX(-${currentIndex * 100}%)`;
+                
+                // 更新指示器
+                document.querySelectorAll('.indicator-dot').forEach((dot, idx) => {
+                    dot.className = `indicator-dot ${idx === currentIndex ? 'active' : ''}`;
+                });
+            }, 3000);
+        }
+
+        // ========== 事件绑定 ==========
+        // 返回按钮
+        detailBackBtn.addEventListener('click', () => {
+            window.location.href = 'goods.html';
+        });
+
+        // 查看全部/收起
+        viewAllBtn.addEventListener('click', () => {
+            infoExpand.classList.toggle('show-all');
+            viewAllBtn.textContent = infoExpand.classList.contains('show-all') ? '收起' : '查看全部';
+        });
+
+        // 联系卖家按钮
+        contactBtn.addEventListener('click', () => {
+            showToast('已复制卖家联系方式到剪贴板');
+        });
+
+        // ========== 页面初始化 ==========
+        document.addEventListener('DOMContentLoaded', () => {
+            renderDetailPage();
+        });
+    </script>
+</body>
+</html>

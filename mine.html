@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>农产品展示与发布平台 - 我的</title>
+    <style>
+        /* 基础样式重置 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+        }
+        body {
+            background-color: #f5f5f5;
+            font-size: 14px;
+            color: #333;
+        }
+        /* Toast提示 */
+        .toast {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 10px 20px;
+            background-color: rgba(0,0,0,0.7);
+            color: #fff;
+            border-radius: 4px;
+            font-size: 14px;
+            z-index: 1000;
+            display: none;
+        }
+
+        /* ========== 我的页面样式 ========== */
+        .mine-page {
+            background-color: #f5f5f5;
+            min-height: 100vh;
+        }
+        .mine-header {
+            padding: 10px 15px;
+            background-color: #fff;
+            border-bottom: 1px solid #eee;
+            font-size: 16px;
+            font-weight: bold;
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 90;
+        }
+        .mine-content {
+            padding: 20px 15px;
+            text-align: center;
+            color: #666;
+            margin-top: 50px;
+        }
+        .mine-card {
+            background-color: #fff;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 15px;
+        }
+        .mine-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background-color: #e8f4fd;
+            margin: 0 auto 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 30px;
+            color: #0088ff;
+        }
+        .mine-nickname {
+            font-size: 18px;
+            margin-bottom: 5px;
+            color: #333;
+        }
+        .mine-placeholder {
+            line-height: 1.6;
+            margin-top: 20px;
+        }
+        .mine-menu {
+            margin-top: 30px;
+        }
+        .mine-menu-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px 10px;
+            background-color: #fff;
+            border-bottom: 1px solid #f5f5f5;
+        }
+        .mine-menu-item:last-child {
+            border-bottom: none;
+        }
+        .mine-menu-item .icon {
+            font-size: 18px;
+            margin-right: 10px;
+        }
+        .mine-menu-item .text {
+            flex: 1;
+            text-align: left;
+        }
+        .mine-menu-item .arrow {
+            font-size: 12px;
+            color: #999;
+        }
+
+        /* ========== 底部Tab栏样式 ========== */
+        .tab-bar {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            display: flex;
+            background-color: #fff;
+            border-top: 1px solid #eee;
+            padding: 5px 0;
+        }
+        .tab-bar .tab-item {
+            flex: 1;
+            text-align: center;
+            cursor: pointer;
+        }
+        .tab-bar .tab-item .icon {
+            font-size: 20px;
+            margin-bottom: 3px;
+            display: block;
+        }
+        .tab-bar .tab-item .text {
+            font-size: 12px;
+            color: #666;
+        }
+        .tab-bar .tab-item.active .text {
+            color: #0088ff;
+        }
+        .container {
+            padding-bottom: 60px;
+        }
+    </style>
+</head>
+<body class="mine-page">
+    <!-- 我的页面主体 -->
+    <div class="container">
+        <!-- 顶部标题 -->
+        <div class="mine-header">我的</div>
+
+        <!-- 内容区域 -->
+        <div class="mine-content">
+            <div class="mine-card">
+                <div class="mine-avatar">👤</div>
+                <div class="mine-nickname">未登录</div>
+                <div style="color: #0088ff; font-size: 13px; cursor: pointer;" id="loginBtn">点击登录/注册</div>
+            </div>
+
+            <!-- 功能菜单 -->
+            <div class="mine-menu">
+                <div class="mine-menu-item">
+                    <span class="icon">📝</span>
+                    <span class="text">我发布的农产品</span>
+                    <span class="arrow">></span>
+                </div>
+                <div class="mine-menu-item">
+                    <span class="icon">⭐</span>
+                    <span class="text">我的收藏</span>
+                    <span class="arrow">></span>
+                </div>
+                <div class="mine-menu-item">
+                    <span class="icon">⚙️</span>
+                    <span class="text">设置</span>
+                    <span class="arrow">></span>
+                </div>
+                <div class="mine-menu-item">
+                    <span class="icon">❓</span>
+                    <span class="text">帮助与反馈</span>
+                    <span class="arrow">></span>
+                </div>
+            </div>
+
+            <div class="mine-placeholder">
+                更多功能正在开发中...<br>
+                敬请期待！
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部Tab栏 -->
+    <div class="tab-bar">
+        <div class="tab-item" data-page="goods">
+            <span class="icon">🥬</span>
+            <span class="text">农产品</span>
+        </div>
+        <div class="tab-item" data-page="publish">
+            <span class="icon">📤</span>
+            <span class="text">发布</span>
+        </div>
+        <div class="tab-item active" data-page="mine">
+            <span class="icon">👤</span>
+            <span class="text">我的</span>
+        </div>
+    </div>
+
+    <!-- 提示弹窗 -->
+    <div class="toast" id="toast"></div>
+
+    <script>
+        // ========== DOM元素缓存 ==========
+        const toast = document.getElementById('toast');
+        const tabItems = document.querySelectorAll('.tab-bar .tab-item');
+        const loginBtn = document.getElementById('loginBtn');
+        const menuItems = document.querySelectorAll('.mine-menu-item');
+
+        // ========== 工具函数 ==========
+        // Toast提示
+        function showToast(message, duration = 2000) {
+            toast.textContent = message;
+            toast.style.display = 'block';
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, duration);
+        }
+
+        // ========== 登录按钮逻辑 ==========
+        loginBtn.addEventListener('click', () => {
+            showToast('登录功能暂未开放');
+        });
+
+        // ========== 菜单项点击逻辑 ==========
+        menuItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const menuText = item.querySelector('.text').textContent;
+                showToast(`${menuText}功能暂未开放`);
+            });
+        });
+
+        // ========== Tab栏跳转逻辑 ==========
+        tabItems.forEach(item => {
+            item.addEventListener('click', () => {
+                const targetPage = item.dataset.page;
+                switch(targetPage) {
+                    case 'goods':
+                        window.location.href = 'goods.html';
+                        break;
+                    case 'publish':
+                        window.location.href = 'publish.html';
+                        break;
+                    case 'mine':
+                        window.location.href = 'mine.html';
+                        break;
+                }
+            });
+        });
+    </script>
+</body>
+</html>
