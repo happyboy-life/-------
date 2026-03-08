@@ -517,6 +517,17 @@
         </div>
     </div>
 
+    <!-- 登录提示弹窗 -->
+    <div class="modal" id="loginTipModal">
+        <div class="content">
+            <div class="title">需要登录才能发布商品</div>
+            <div class="btn-group">
+                <button class="cancel" id="loginTipCancelBtn">取消</button>
+                <button class="confirm" id="loginTipConfirmBtn">去登录</button>
+            </div>
+        </div>
+    </div>
+
     <!-- 底部Tab栏 -->
     <div class="tab-bar">
         <div class="tab-item" data-page="goods">
@@ -542,6 +553,8 @@
         let currentPriceType = '以件计价'; // 当前计价方式
         let currentPrice = 0; // 当前价格
         let currentAddress = '一键定位'; // 当前地址
+        let isLogin = false; // 登录状态标记
+        let userInfo = null; // 用户信息
 
         // ========== DOM元素缓存 ==========
         const toast = document.getElementById('toast');
@@ -583,6 +596,11 @@
         const addressConfirmBtn = document.getElementById('addressConfirmBtn');
         const showAddress = document.getElementById('showAddress');
 
+        // 登录提示弹窗元素
+        const loginTipModal = document.getElementById('loginTipModal');
+        const loginTipCancelBtn = document.getElementById('loginTipCancelBtn');
+        const loginTipConfirmBtn = document.getElementById('loginTipConfirmBtn');
+
         // Tab栏元素
         const tabItems = document.querySelectorAll('.tab-bar .tab-item');
 
@@ -596,7 +614,41 @@
             }, duration);
         }
 
+        // 检查登录状态
+        function checkLoginStatus() {
+            // 从localStorage获取用户信息（登录页登录成功后会存储）
+            const userInfoStr = localStorage.getItem('userInfo');
+            const userType = localStorage.getItem('userType');
+            
+            // 判断是否登录：有userInfo且不是游客模式
+            if (userInfoStr && userType !== 'guest') {
+                isLogin = true;
+                userInfo = JSON.parse(userInfoStr);
+                return true;
+            } else {
+                isLogin = false;
+                userInfo = null;
+                return false;
+            }
+        }
+
+        // 打开登录提示弹窗
+        function openLoginTipModal() {
+            loginTipModal.style.display = 'flex';
+        }
+
+        // ========== 页面初始化 ==========
+        // 页面加载时检查登录状态（仅提示，不限制操作）
+        window.addEventListener('DOMContentLoaded', () => {
+            checkLoginStatus();
+            // 友好提示：发布需登录，但可先完善信息
+            if (!isLogin) {
+                showToast('您可先完善商品信息，发布时需登录哦', 3000);
+            }
+        });
+
         // ========== 图片上传逻辑 ==========
+        // 移除登录校验，允许自由上传图片
         addImgBtn.addEventListener('click', () => {
             publishFileInput.click();
         });
@@ -635,6 +687,7 @@
         });
 
         // ========== 计价方式弹窗逻辑 ==========
+        // 移除登录校验，允许自由选择计价方式
         priceTypeRow.addEventListener('click', () => {
             priceTypeModal.style.display = 'flex';
             priceTypeItems.forEach(item => {
@@ -664,6 +717,7 @@
         });
 
         // ========== 价格选择弹窗逻辑 ==========
+        // 移除登录校验，允许自由设置价格
         priceRow.addEventListener('click', () => {
             priceSelectModal.style.display = 'flex';
             priceInput.value = currentPrice || '';
@@ -686,6 +740,7 @@
         });
 
         // ========== 地址选择弹窗逻辑 ==========
+        // 移除登录校验，允许自由填写地址
         addressRow.addEventListener('click', () => {
             addressSelectModal.style.display = 'flex';
             addressInput.value = currentAddress === '一键定位' ? '' : currentAddress;
@@ -715,6 +770,17 @@
             addressSelectModal.style.display = 'none';
         });
 
+        // ========== 登录提示弹窗逻辑 ==========
+        loginTipCancelBtn.addEventListener('click', () => {
+            loginTipModal.style.display = 'none';
+        });
+
+        loginTipConfirmBtn.addEventListener('click', () => {
+            loginTipModal.style.display = 'none';
+            // 跳转到登录页
+            window.location.href = 'login.html';
+        });
+
         // ========== 发布返回逻辑 ==========
         publishBackBtn.addEventListener('click', () => {
             window.location.href = 'goods.html';
@@ -722,7 +788,13 @@
 
         // ========== 提交发布逻辑 ==========
         publishSubmitBtn.addEventListener('click', () => {
-            // 表单验证
+            // 仅在发布时校验登录状态（核心修改）
+            if (!checkLoginStatus()) {
+                openLoginTipModal();
+                return;
+            }
+
+            // 表单基础验证（已登录状态下执行）
             if (!uploadedImage) {
                 showToast('请上传农产品主图');
                 return;
@@ -740,7 +812,29 @@
                 return;
             }
 
+            // 构造发布数据（包含用户信息）
+            const publishData = {
+                userId: userInfo.userId, // 登录用户ID
+                userName: userInfo.username, // 登录用户名
+                productType: document.getElementById('productTypeSelect').value,
+                productName: productNameInput.value.trim(),
+                productDesc: productDescInput.value.trim(),
+                price: currentPrice,
+                priceType: currentPriceType,
+                address: currentAddress,
+                contact: document.getElementById('contactInput').value.trim(),
+                category: document.getElementById('productCategoryInput').value.trim(),
+                spec: document.getElementById('productSpecInput').value.trim(),
+                shelfLife: document.getElementById('productShelfLifeInput').value.trim(),
+                package: document.getElementById('productPackageInput').value.trim(),
+                pesticide: document.getElementById('productPesticideInput').value.trim(),
+                storage: document.getElementById('productStorageInput').value.trim(),
+                pickup: document.getElementById('productPickupInput').value.trim(),
+                avatar: userInfo.avatar // 用户头像
+            };
+
             // 模拟发布成功
+            console.log('发布商品数据：', publishData);
             showToast('发布成功！');
             resetPublishForm();
             
@@ -790,6 +884,11 @@
                         window.location.href = 'publish.html';
                         break;
                     case 'mine':
+                        // 我的页面仍保留登录验证（可选，如需移除可删除此段）
+                        if (!checkLoginStatus()) {
+                            openLoginTipModal();
+                            return;
+                        }
                         window.location.href = 'mine.html';
                         break;
                 }
