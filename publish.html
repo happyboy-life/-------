@@ -884,11 +884,6 @@
                         window.location.href = 'publish.html';
                         break;
                     case 'mine':
-                        // 我的页面仍保留登录验证（可选，如需移除可删除此段）
-                        if (!checkLoginStatus()) {
-                            openLoginTipModal();
-                            return;
-                        }
                         window.location.href = 'mine.html';
                         break;
                 }
