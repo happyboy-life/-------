@@ -54,14 +54,21 @@
             border-radius: 8px;
             cursor: pointer;
             font-size: 15px;
+            transition: background-color 0.2s ease;
         }
         .modal .cancel {
             background-color: #f5f5f5;
             color: #666;
         }
+        .modal .cancel:hover {
+            background-color: #eee;
+        }
         .modal .confirm {
             background-color: #0088ff;
             color: #fff;
+        }
+        .modal .confirm:hover {
+            background-color: #0066cc;
         }
         /* Toast提示 */
         .toast {
@@ -76,6 +83,39 @@
             font-size: 14px;
             z-index: 1000;
             display: none;
+        }
+        /* 加载状态遮罩 */
+        .loading-mask {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.2);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1001;
+        }
+        .loading-mask .loading-content {
+            background-color: #fff;
+            padding: 20px 30px;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .loading-mask .loading-spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid #eee;
+            border-top: 2px solid #0088ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
 
         /* ========== 发布页面样式 ========== */
@@ -92,6 +132,7 @@
             position: sticky;
             top: 0;
             z-index: 90;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
         .publish-back {
             font-size: 18px;
@@ -113,6 +154,16 @@
             color: #0088ff;
             cursor: pointer;
             padding: 5px 10px;
+            border-radius: 6px;
+            transition: background-color 0.2s ease;
+        }
+        .publish-submit-btn:hover {
+            background-color: #f0f7ff;
+        }
+        .publish-submit-btn.disabled {
+            color: #999;
+            cursor: not-allowed;
+            background-color: transparent;
         }
         .publish-form-wrap {
             padding: 10px 15px;
@@ -138,6 +189,11 @@
             font-size: 24px;
             color: #999;
             cursor: pointer;
+            transition: border-color 0.2s ease;
+        }
+        .publish-img-item.add:hover {
+            border-color: #0088ff;
+            color: #0088ff;
         }
         .publish-img-item.has-img {
             border: none;
@@ -174,6 +230,7 @@
             border-radius: 8px;
             padding: 12px 15px;
             margin-bottom: 10px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.03);
         }
         .form-row-item {
             display: flex;
@@ -188,6 +245,7 @@
         .form-label {
             font-size: 14px;
             color: #333;
+            font-weight: 400;
         }
         .form-value {
             display: flex;
@@ -204,6 +262,12 @@
             background: transparent;
             padding: 2px 0;
             width: 100%;
+        }
+        .form-value input:focus {
+            color: #0088ff;
+        }
+        .form-value input::placeholder {
+            color: #ccc;
         }
         .count-limit {
             font-size: 12px;
@@ -222,6 +286,12 @@
             min-height: 60px;
             padding: 5px 0;
         }
+        .form-textarea:focus {
+            color: #0088ff;
+        }
+        .form-textarea::placeholder {
+            color: #ccc;
+        }
         .price-type-modal .content, .price-select-modal .content, .address-select-modal .content {
             padding: 15px;
         }
@@ -231,6 +301,7 @@
             border-radius: 8px;
             margin-bottom: 8px;
             cursor: pointer;
+            transition: all 0.2s ease;
         }
         .price-type-item.active {
             background-color: #f0f8ff;
@@ -242,6 +313,9 @@
             color: #666;
             border: 1px solid #eee;
         }
+        .price-type-item.normal:hover {
+            background-color: #eee;
+        }
         .price-select-input {
             width: 100%;
             padding: 10px;
@@ -250,6 +324,11 @@
             font-size: 16px;
             text-align: center;
             margin-bottom: 15px;
+            outline: none;
+        }
+        .price-select-input:focus {
+            border-color: #0088ff;
+            box-shadow: 0 0 0 2px rgba(0, 136, 255, 0.1);
         }
         /* 地址选择弹窗 - 地址输入框样式 */
         .address-input {
@@ -313,11 +392,13 @@
             background-color: #fff;
             border-top: 1px solid #eee;
             padding: 5px 0;
+            box-shadow: 0 -1px 3px rgba(0,0,0,0.05);
         }
         .tab-bar .tab-item {
             flex: 1;
             text-align: center;
             cursor: pointer;
+            padding: 5px 0;
         }
         .tab-bar .tab-item .icon {
             font-size: 20px;
@@ -327,8 +408,12 @@
         .tab-bar .tab-item .text {
             font-size: 12px;
             color: #666;
+            transition: color 0.2s ease;
         }
         .tab-bar .tab-item.active .text {
+            color: #0088ff;
+        }
+        .tab-bar .tab-item:hover .text {
             color: #0088ff;
         }
         .container {
@@ -547,346 +632,593 @@
     <!-- 提示弹窗 -->
     <div class="toast" id="toast"></div>
 
+    <!-- 加载状态遮罩 -->
+    <div class="loading-mask" id="loadingMask">
+        <div class="loading-content">
+            <div class="loading-spinner"></div>
+            <div class="loading-text">处理中...</div>
+        </div>
+    </div>
+
     <script>
-        // ========== 全局变量 ==========
-        let uploadedImage = null; // 上传的图片文件
-        let currentPriceType = '以件计价'; // 当前计价方式
-        let currentPrice = 0; // 当前价格
-        let currentAddress = '一键定位'; // 当前地址
-        let isLogin = false; // 登录状态标记
-        let userInfo = null; // 用户信息
+        // ===================== 全局配置（规范命名+RESTful API） =====================
+        const API_CONFIG = {
+            baseUrl: 'http://localhost:8080', // 后端服务根地址
+            timeout: 15000, // 请求超时时间
+            // 规范API路径（RESTful风格）
+            apiPaths: {
+                uploadProductImage: '/api/v1/product/image/upload', // 商品图片上传
+                publishProduct: '/api/v1/product/publish', // 发布商品
+                getLocation: '/api/v1/common/location' // 获取定位地址
+            }
+        };
 
-        // ========== DOM元素缓存 ==========
-        const toast = document.getElementById('toast');
-        const publishBackBtn = document.getElementById('publishBackBtn');
-        const addImgBtn = document.getElementById('addImgBtn');
-        const publishFileInput = document.getElementById('publishFileInput');
-        const previewImgItem = document.getElementById('previewImgItem');
-        const previewImg = document.getElementById('previewImg');
-        const deleteImgBtn = document.getElementById('deleteImgBtn');
-        const priceRow = document.getElementById('priceRow');
-        const priceTypeRow = document.getElementById('priceTypeRow');
-        const addressRow = document.getElementById('addressRow');
-        const productNameInput = document.getElementById('productNameInput');
-        const nameCount = document.getElementById('nameCount');
-        const productDescInput = document.getElementById('productDescInput');
-        const descCount = document.getElementById('descCount');
-        const publishSubmitBtn = document.getElementById('publishSubmitBtn');
-        
-        // 计价方式弹窗元素
-        const priceTypeModal = document.getElementById('priceTypeModal');
-        const priceTypeItems = document.querySelectorAll('.price-type-item');
-        const priceTypeCancelBtn = document.getElementById('priceTypeCancelBtn');
-        const priceTypeConfirmBtn = document.getElementById('priceTypeConfirmBtn');
-        
-        // 价格选择弹窗元素
-        const priceSelectModal = document.getElementById('priceSelectModal');
-        const priceInput = document.getElementById('priceInput');
-        const priceUnitText = document.getElementById('priceUnitText');
-        const priceCancelBtn = document.getElementById('priceCancelBtn');
-        const priceConfirmBtn = document.getElementById('priceConfirmBtn');
-        const showPrice = document.getElementById('showPrice');
-        const showPriceType = document.getElementById('showPriceType');
-        
-        // 地址弹窗元素
-        const addressSelectModal = document.getElementById('addressSelectModal');
-        const locationBtn = document.getElementById('locationBtn');
-        const addressInput = document.getElementById('addressInput');
-        const addressCancelBtn = document.getElementById('addressCancelBtn');
-        const addressConfirmBtn = document.getElementById('addressConfirmBtn');
-        const showAddress = document.getElementById('showAddress');
+        // ===================== 全局状态管理（语义化命名） =====================
+        const globalState = {
+            uploadedImageFile: null, // 上传的图片文件
+            uploadedImageUrl: '', // 后端返回的图片URL
+            currentPriceType: '以件计价', // 当前计价方式
+            currentPrice: 0, // 当前价格
+            currentAddress: '一键定位', // 当前地址
+            isLogin: false, // 登录状态
+            userInfo: null, // 用户信息
+            isSubmitting: false // 是否正在提交发布请求（防重复提交）
+        };
 
-        // 登录提示弹窗元素
-        const loginTipModal = document.getElementById('loginTipModal');
-        const loginTipCancelBtn = document.getElementById('loginTipCancelBtn');
-        const loginTipConfirmBtn = document.getElementById('loginTipConfirmBtn');
+        // ===================== DOM元素缓存（语义化+统一管理） =====================
+        const domElements = {
+            // 基础提示
+            toastEl: document.getElementById('toast'),
+            loadingMaskEl: document.getElementById('loadingMask'),
+            // 顶部栏
+            publishBackBtnEl: document.getElementById('publishBackBtn'),
+            publishSubmitBtnEl: document.getElementById('publishSubmitBtn'),
+            productTypeSelectEl: document.getElementById('productTypeSelect'),
+            // 图片上传
+            addImgBtnEl: document.getElementById('addImgBtn'),
+            publishFileInputEl: document.getElementById('publishFileInput'),
+            previewImgItemEl: document.getElementById('previewImgItem'),
+            previewImgEl: document.getElementById('previewImg'),
+            deleteImgBtnEl: document.getElementById('deleteImgBtn'),
+            // 价格相关
+            priceRowEl: document.getElementById('priceRow'),
+            priceTypeRowEl: document.getElementById('priceTypeRow'),
+            showPriceEl: document.getElementById('showPrice'),
+            showPriceTypeEl: document.getElementById('showPriceType'),
+            // 价格弹窗
+            priceTypeModalEl: document.getElementById('priceTypeModal'),
+            priceTypeItemsEl: document.querySelectorAll('.price-type-item'),
+            priceTypeCancelBtnEl: document.getElementById('priceTypeCancelBtn'),
+            priceTypeConfirmBtnEl: document.getElementById('priceTypeConfirmBtn'),
+            priceSelectModalEl: document.getElementById('priceSelectModal'),
+            priceInputEl: document.getElementById('priceInput'),
+            priceUnitTextEl: document.getElementById('priceUnitText'),
+            priceCancelBtnEl: document.getElementById('priceCancelBtn'),
+            priceConfirmBtnEl: document.getElementById('priceConfirmBtn'),
+            // 地址相关
+            addressRowEl: document.getElementById('addressRow'),
+            showAddressEl: document.getElementById('showAddress'),
+            addressSelectModalEl: document.getElementById('addressSelectModal'),
+            locationBtnEl: document.getElementById('locationBtn'),
+            addressInputEl: document.getElementById('addressInput'),
+            addressCancelBtnEl: document.getElementById('addressCancelBtn'),
+            addressConfirmBtnEl: document.getElementById('addressConfirmBtn'),
+            // 登录提示弹窗
+            loginTipModalEl: document.getElementById('loginTipModal'),
+            loginTipCancelBtnEl: document.getElementById('loginTipCancelBtn'),
+            loginTipConfirmBtnEl: document.getElementById('loginTipConfirmBtn'),
+            // 表单输入
+            contactInputEl: document.getElementById('contactInput'),
+            productNameInputEl: document.getElementById('productNameInput'),
+            nameCountEl: document.getElementById('nameCount'),
+            productDescInputEl: document.getElementById('productDescInput'),
+            descCountEl: document.getElementById('descCount'),
+            productCategoryInputEl: document.getElementById('productCategoryInput'),
+            productSpecInputEl: document.getElementById('productSpecInput'),
+            productShelfLifeInputEl: document.getElementById('productShelfLifeInput'),
+            productPackageInputEl: document.getElementById('productPackageInput'),
+            productPesticideInputEl: document.getElementById('productPesticideInput'),
+            productStorageInputEl: document.getElementById('productStorageInput'),
+            productPickupInputEl: document.getElementById('productPickupInput'),
+            // Tab栏
+            tabItemsEl: document.querySelectorAll('.tab-bar .tab-item')
+        };
 
-        // Tab栏元素
-        const tabItems = document.querySelectorAll('.tab-bar .tab-item');
-
-        // ========== 工具函数 ==========
-        // Toast提示
+        // ===================== 工具函数（通用+规范） =====================
+        /**
+         * 显示Toast提示
+         * @param {string} message - 提示内容
+         * @param {number} duration - 显示时长（ms）
+         */
         function showToast(message, duration = 2000) {
-            toast.textContent = message;
-            toast.style.display = 'block';
+            domElements.toastEl.textContent = message;
+            domElements.toastEl.style.display = 'block';
             setTimeout(() => {
-                toast.style.display = 'none';
+                domElements.toastEl.style.display = 'none';
             }, duration);
         }
 
-        // 检查登录状态
+        /**
+         * 显示/隐藏加载遮罩
+         * @param {boolean} isShow - 是否显示
+         * @param {string} text - 加载提示文字
+         */
+        function toggleLoadingMask(isShow, text = '处理中...') {
+            domElements.loadingMaskEl.style.display = isShow ? 'flex' : 'none';
+            const loadingTextEl = domElements.loadingMaskEl.querySelector('.loading-text');
+            if (loadingTextEl) loadingTextEl.textContent = text;
+        }
+
+        /**
+         * 统一API请求封装
+         * @param {string} url - API路径
+         * @param {string} method - 请求方法（GET/POST/PUT等）
+         * @param {object} data - 请求参数
+         * @param {object} options - 额外配置（isFormData: 是否FormData格式）
+         * @returns {Promise} 请求结果
+         */
+        async function requestApi(url, method = 'POST', data = {}, options = {}) {
+            const fullUrl = `${API_CONFIG.baseUrl}${url}`;
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), API_CONFIG.timeout);
+
+            try {
+                // 构造请求头（携带Token鉴权）
+                const headers = {
+                    'Content-Type': 'application/json;charset=UTF-8'
+                };
+                const token = localStorage.getItem('accessToken');
+                if (token) {
+                    headers['Authorization'] = `Bearer ${token}`;
+                }
+
+                // 处理FormData请求（图片上传）
+                let requestBody = null;
+                if (options.isFormData) {
+                    delete headers['Content-Type']; // 浏览器自动设置multipart/form-data
+                    requestBody = data;
+                } else {
+                    requestBody = JSON.stringify(data);
+                }
+
+                // 发送请求
+                const response = await fetch(fullUrl, {
+                    method,
+                    headers,
+                    body: requestBody,
+                    signal: controller.signal
+                });
+
+                clearTimeout(timeoutId);
+
+                // 处理响应
+                if (!response.ok) {
+                    throw new Error(`请求失败，状态码：${response.status}`);
+                }
+
+                const result = await response.json();
+                // 后端统一返回格式：{ code: 200, msg: '成功', data: {} }
+                if (result.code !== 200) {
+                    throw new Error(result.msg || '接口请求失败');
+                }
+
+                return result.data;
+            } catch (error) {
+                console.error(`API请求失败 [${url}]：`, error);
+                throw new Error(error.message || '网络异常，请稍后重试');
+            }
+        }
+
+        /**
+         * 检查登录状态
+         * @returns {boolean} 是否已登录
+         */
         function checkLoginStatus() {
-            // 从localStorage获取用户信息（登录页登录成功后会存储）
             const userInfoStr = localStorage.getItem('userInfo');
             const userType = localStorage.getItem('userType');
-            
-            // 判断是否登录：有userInfo且不是游客模式
-            if (userInfoStr && userType !== 'guest') {
-                isLogin = true;
-                userInfo = JSON.parse(userInfoStr);
+            const token = localStorage.getItem('accessToken');
+
+            if (userInfoStr && userType !== 'guest' && token) {
+                globalState.isLogin = true;
+                globalState.userInfo = JSON.parse(userInfoStr);
                 return true;
             } else {
-                isLogin = false;
-                userInfo = null;
+                globalState.isLogin = false;
+                globalState.userInfo = null;
                 return false;
             }
         }
 
-        // 打开登录提示弹窗
+        /**
+         * 打开登录提示弹窗
+         */
         function openLoginTipModal() {
-            loginTipModal.style.display = 'flex';
+            domElements.loginTipModalEl.style.display = 'flex';
         }
 
-        // ========== 页面初始化 ==========
-        // 页面加载时检查登录状态（仅提示，不限制操作）
-        window.addEventListener('DOMContentLoaded', () => {
-            checkLoginStatus();
-            // 友好提示：发布需登录，但可先完善信息
-            if (!isLogin) {
-                showToast('您可先完善商品信息，发布时需登录哦', 3000);
+        /**
+         * 表单验证
+         * @returns {boolean} 是否验证通过
+         */
+        function validatePublishForm() {
+            // 验证图片
+            if (!globalState.uploadedImageUrl) {
+                showToast('请上传农产品图片并完成上传');
+                return false;
             }
+
+            // 验证商品名称
+            const productName = domElements.productNameInputEl.value.trim();
+            if (!productName) {
+                showToast('请输入农产品名称');
+                return false;
+            }
+            if (productName.length > 25) {
+                showToast('农产品名称不能超过25个字');
+                return false;
+            }
+
+            // 验证价格
+            if (globalState.currentPrice <= 0) {
+                showToast('请设置有效的商品价格');
+                return false;
+            }
+
+            // 验证地址
+            if (globalState.currentAddress === '一键定位') {
+                showToast('请选择或填写发货地址');
+                return false;
+            }
+
+            // 验证联系方式（手机号格式）
+            const contact = domElements.contactInputEl.value.trim();
+            if (contact) {
+                const phoneReg = /^1[3-9]\d{9}$/;
+                if (contact.length === 11 && !phoneReg.test(contact)) {
+                    showToast('请输入有效的手机号码');
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        // ===================== 图片上传逻辑（对接API） =====================
+        /**
+         * 上传图片到后端
+         * @param {File} file - 图片文件
+         */
+        async function uploadProductImage(file) {
+            try {
+                toggleLoadingMask(true, '图片上传中...');
+                
+                // 构造FormData
+                const formData = new FormData();
+                formData.append('productImage', file);
+                
+                // 调用图片上传API
+                const uploadResult = await requestApi(
+                    API_CONFIG.apiPaths.uploadProductImage,
+                    'POST',
+                    formData,
+                    { isFormData: true }
+                );
+
+                // 更新全局状态
+                globalState.uploadedImageUrl = uploadResult.imageUrl;
+                showToast('图片上传成功');
+                
+                return true;
+            } catch (error) {
+                showToast(`图片上传失败：${error.message}`);
+                return false;
+            } finally {
+                toggleLoadingMask(false);
+            }
+        }
+
+        // 选择图片
+        domElements.addImgBtnEl.addEventListener('click', () => {
+            domElements.publishFileInputEl.click();
         });
 
-        // ========== 图片上传逻辑 ==========
-        // 移除登录校验，允许自由上传图片
-        addImgBtn.addEventListener('click', () => {
-            publishFileInput.click();
-        });
-
-        publishFileInput.addEventListener('change', (e) => {
+        // 图片选择后处理
+        domElements.publishFileInputEl.addEventListener('change', async (e) => {
             const file = e.target.files[0];
-            if (!file || !file.type.startsWith('image/')) return;
+            if (!file || !file.type.startsWith('image/')) {
+                showToast('请选择有效的图片文件');
+                return;
+            }
 
-            uploadedImage = file;
+            // 前端预览
+            globalState.uploadedImageFile = file;
             const reader = new FileReader();
-            reader.onload = function(event) {
-                previewImg.src = event.target.result;
-                previewImgItem.style.display = 'block';
-                addImgBtn.style.display = 'none';
+            reader.onload = async (event) => {
+                domElements.previewImgEl.src = event.target.result;
+                domElements.previewImgItemEl.style.display = 'block';
+                domElements.addImgBtnEl.style.display = 'none';
+
+                // 上传到后端
+                await uploadProductImage(file);
             };
             reader.readAsDataURL(file);
         });
 
         // 删除图片
-        deleteImgBtn.addEventListener('click', () => {
-            uploadedImage = null;
-            previewImgItem.style.display = 'none';
-            addImgBtn.style.display = 'flex';
-            publishFileInput.value = '';
+        domElements.deleteImgBtnEl.addEventListener('click', () => {
+            // 重置图片状态
+            globalState.uploadedImageFile = null;
+            globalState.uploadedImageUrl = '';
+            domElements.previewImgItemEl.style.display = 'none';
+            domElements.addImgBtnEl.style.display = 'flex';
+            domElements.publishFileInputEl.value = '';
+            showToast('图片已删除');
         });
 
-        // ========== 字数限制逻辑 ==========
-        productNameInput.addEventListener('input', () => {
-            const len = productNameInput.value.length;
-            nameCount.textContent = `${len}/25`;
-        });
-
-        productDescInput.addEventListener('input', () => {
-            const len = productDescInput.value.length;
-            descCount.textContent = `${len}/100`;
-        });
-
-        // ========== 计价方式弹窗逻辑 ==========
-        // 移除登录校验，允许自由选择计价方式
-        priceTypeRow.addEventListener('click', () => {
-            priceTypeModal.style.display = 'flex';
-            priceTypeItems.forEach(item => {
-                item.className = item.dataset.type === currentPriceType 
+        // ===================== 计价方式逻辑 =====================
+        // 打开计价方式弹窗
+        domElements.priceTypeRowEl.addEventListener('click', () => {
+            domElements.priceTypeModalEl.style.display = 'flex';
+            // 高亮当前选中项
+            domElements.priceTypeItemsEl.forEach(item => {
+                item.className = item.dataset.type === globalState.currentPriceType 
                     ? 'price-type-item active' 
                     : 'price-type-item normal';
             });
         });
 
-        priceTypeItems.forEach(item => {
+        // 选择计价方式
+        domElements.priceTypeItemsEl.forEach(item => {
             item.addEventListener('click', () => {
-                priceTypeItems.forEach(i => i.className = 'price-type-item normal');
+                domElements.priceTypeItemsEl.forEach(i => i.className = 'price-type-item normal');
                 item.className = 'price-type-item active';
             });
         });
 
-        priceTypeCancelBtn.addEventListener('click', () => {
-            priceTypeModal.style.display = 'none';
+        // 取消计价方式选择
+        domElements.priceTypeCancelBtnEl.addEventListener('click', () => {
+            domElements.priceTypeModalEl.style.display = 'none';
         });
 
-        priceTypeConfirmBtn.addEventListener('click', () => {
+        // 确认计价方式选择
+        domElements.priceTypeConfirmBtnEl.addEventListener('click', () => {
             const activeItem = document.querySelector('.price-type-item.active');
-            currentPriceType = activeItem.dataset.type;
-            showPriceType.textContent = currentPriceType;
-            priceUnitText.textContent = currentPriceType === '以件计价' ? '元/件' : '元/斤';
-            priceTypeModal.style.display = 'none';
+            globalState.currentPriceType = activeItem.dataset.type;
+            domElements.showPriceTypeEl.textContent = globalState.currentPriceType;
+            domElements.priceUnitTextEl.textContent = globalState.currentPriceType === '以件计价' ? '元/件' : '元/斤';
+            domElements.priceTypeModalEl.style.display = 'none';
         });
 
-        // ========== 价格选择弹窗逻辑 ==========
-        // 移除登录校验，允许自由设置价格
-        priceRow.addEventListener('click', () => {
-            priceSelectModal.style.display = 'flex';
-            priceInput.value = currentPrice || '';
-            priceUnitText.textContent = currentPriceType === '以件计价' ? '元/件' : '元/斤';
+        // ===================== 价格选择逻辑 =====================
+        // 打开价格弹窗
+        domElements.priceRowEl.addEventListener('click', () => {
+            domElements.priceSelectModalEl.style.display = 'flex';
+            domElements.priceInputEl.value = globalState.currentPrice || '';
+            domElements.priceUnitTextEl.textContent = globalState.currentPriceType === '以件计价' ? '元/件' : '元/斤';
         });
 
-        priceCancelBtn.addEventListener('click', () => {
-            priceSelectModal.style.display = 'none';
+        // 取消价格选择
+        domElements.priceCancelBtnEl.addEventListener('click', () => {
+            domElements.priceSelectModalEl.style.display = 'none';
         });
 
-        priceConfirmBtn.addEventListener('click', () => {
-            const price = parseFloat(priceInput.value);
+        // 确认价格选择
+        domElements.priceConfirmBtnEl.addEventListener('click', () => {
+            const price = parseFloat(domElements.priceInputEl.value);
             if (isNaN(price) || price < 0) {
                 showToast('请输入有效的价格');
                 return;
             }
-            currentPrice = price;
-            showPrice.textContent = `¥${price.toFixed(2)}`;
-            priceSelectModal.style.display = 'none';
+            globalState.currentPrice = price;
+            domElements.showPriceEl.textContent = `¥${price.toFixed(2)}`;
+            domElements.priceSelectModalEl.style.display = 'none';
         });
 
-        // ========== 地址选择弹窗逻辑 ==========
-        // 移除登录校验，允许自由填写地址
-        addressRow.addEventListener('click', () => {
-            addressSelectModal.style.display = 'flex';
-            addressInput.value = currentAddress === '一键定位' ? '' : currentAddress;
+        // ===================== 地址选择逻辑（对接定位API） =====================
+        // 打开地址弹窗
+        domElements.addressRowEl.addEventListener('click', () => {
+            domElements.addressSelectModalEl.style.display = 'flex';
+            domElements.addressInputEl.value = globalState.currentAddress === '一键定位' ? '' : globalState.currentAddress;
         });
 
-        locationBtn.addEventListener('click', () => {
-            showToast('正在定位...');
-            setTimeout(() => {
-                currentAddress = '湖南省湘潭市岳塘区XX小区6栋201室';
-                addressInput.value = currentAddress;
+        // 一键定位（对接定位API）
+        domElements.locationBtnEl.addEventListener('click', async () => {
+            try {
+                toggleLoadingMask(true, '定位中...');
+                
+                // 调用定位API
+                const locationResult = await requestApi(API_CONFIG.apiPaths.getLocation, 'GET');
+                
+                // 更新地址
+                globalState.currentAddress = locationResult.fullAddress;
+                domElements.addressInputEl.value = globalState.currentAddress;
                 showToast('定位成功');
-            }, 1500);
+            } catch (error) {
+                showToast(`定位失败：${error.message}，请手动输入地址`);
+                // 模拟定位结果（API不可用时）
+                globalState.currentAddress = '湖南省湘潭市岳塘区XX小区6栋201室';
+                domElements.addressInputEl.value = globalState.currentAddress;
+            } finally {
+                toggleLoadingMask(false);
+            }
         });
 
-        addressCancelBtn.addEventListener('click', () => {
-            addressSelectModal.style.display = 'none';
+        // 取消地址选择
+        domElements.addressCancelBtnEl.addEventListener('click', () => {
+            domElements.addressSelectModalEl.style.display = 'none';
         });
 
-        addressConfirmBtn.addEventListener('click', () => {
-            const address = addressInput.value.trim();
+        // 确认地址选择
+        domElements.addressConfirmBtnEl.addEventListener('click', () => {
+            const address = domElements.addressInputEl.value.trim();
             if (!address) {
-                showToast('请输入地址');
+                showToast('请输入发货地址');
                 return;
             }
-            currentAddress = address;
-            showAddress.textContent = address;
-            addressSelectModal.style.display = 'none';
+            globalState.currentAddress = address;
+            domElements.showAddressEl.textContent = address;
+            domElements.addressSelectModalEl.style.display = 'none';
         });
 
-        // ========== 登录提示弹窗逻辑 ==========
-        loginTipCancelBtn.addEventListener('click', () => {
-            loginTipModal.style.display = 'none';
-        });
+        // ===================== 发布商品逻辑（对接API） =====================
+        async function publishProduct() {
+            try {
+                // 防重复提交
+                if (globalState.isSubmitting) return;
+                globalState.isSubmitting = true;
+                domElements.publishSubmitBtnEl.classList.add('disabled');
+                
+                toggleLoadingMask(true, '发布中...');
 
-        loginTipConfirmBtn.addEventListener('click', () => {
-            loginTipModal.style.display = 'none';
-            // 跳转到登录页
-            window.location.href = 'login.html';
-        });
+                // 构造发布数据
+                const publishData = {
+                    userId: globalState.userInfo.userId,
+                    userName: globalState.userInfo.username,
+                    productType: domElements.productTypeSelectEl.value,
+                    productName: domElements.productNameInputEl.value.trim(),
+                    productDesc: domElements.productDescInputEl.value.trim() || '',
+                    price: globalState.currentPrice,
+                    priceUnit: globalState.currentPriceType,
+                    deliveryAddress: globalState.currentAddress,
+                    contactInfo: domElements.contactInputEl.value.trim() || '',
+                    productImageUrl: globalState.uploadedImageUrl,
+                    category: domElements.productCategoryInputEl.value.trim() || '',
+                    specification: domElements.productSpecInputEl.value.trim() || '',
+                    shelfLife: domElements.productShelfLifeInputEl.value.trim() || '',
+                    packageMethod: domElements.productPackageInputEl.value.trim() || '',
+                    pesticideUsed: domElements.productPesticideInputEl.value.trim() || '',
+                    storageMethod: domElements.productStorageInputEl.value.trim() || '',
+                    supportSelfPickup: domElements.productPickupInputEl.value.trim() || ''
+                };
 
-        // ========== 发布返回逻辑 ==========
-        publishBackBtn.addEventListener('click', () => {
-            window.location.href = 'goods.html';
-        });
+                // 调用发布商品API
+                await requestApi(
+                    API_CONFIG.apiPaths.publishProduct,
+                    'POST',
+                    publishData
+                );
 
-        // ========== 提交发布逻辑 ==========
-        publishSubmitBtn.addEventListener('click', () => {
-            // 仅在发布时校验登录状态（核心修改）
-            if (!checkLoginStatus()) {
-                openLoginTipModal();
-                return;
+                showToast('商品发布成功！');
+                
+                // 重置表单
+                setTimeout(() => {
+                    resetPublishForm();
+                    window.location.href = 'goods.html';
+                }, 1500);
+            } catch (error) {
+                showToast(`发布失败：${error.message}`);
+            } finally {
+                globalState.isSubmitting = false;
+                domElements.publishSubmitBtnEl.classList.remove('disabled');
+                toggleLoadingMask(false);
             }
-
-            // 表单基础验证（已登录状态下执行）
-            if (!uploadedImage) {
-                showToast('请上传农产品主图');
-                return;
-            }
-            if (!productNameInput.value.trim()) {
-                showToast('请输入农产品名称');
-                return;
-            }
-            if (currentPrice <= 0) {
-                showToast('请设置有效价格');
-                return;
-            }
-            if (!currentAddress || currentAddress === '一键定位') {
-                showToast('请选择发货地址');
-                return;
-            }
-
-            // 构造发布数据（包含用户信息）
-            const publishData = {
-                userId: userInfo.userId, // 登录用户ID
-                userName: userInfo.username, // 登录用户名
-                productType: document.getElementById('productTypeSelect').value,
-                productName: productNameInput.value.trim(),
-                productDesc: productDescInput.value.trim(),
-                price: currentPrice,
-                priceType: currentPriceType,
-                address: currentAddress,
-                contact: document.getElementById('contactInput').value.trim(),
-                category: document.getElementById('productCategoryInput').value.trim(),
-                spec: document.getElementById('productSpecInput').value.trim(),
-                shelfLife: document.getElementById('productShelfLifeInput').value.trim(),
-                package: document.getElementById('productPackageInput').value.trim(),
-                pesticide: document.getElementById('productPesticideInput').value.trim(),
-                storage: document.getElementById('productStorageInput').value.trim(),
-                pickup: document.getElementById('productPickupInput').value.trim(),
-                avatar: userInfo.avatar // 用户头像
-            };
-
-            // 模拟发布成功
-            console.log('发布商品数据：', publishData);
-            showToast('发布成功！');
-            resetPublishForm();
-            
-            // 返回商品列表页
-            setTimeout(() => {
-                window.location.href = 'goods.html';
-            }, 1500);
-        });
-
-        // ========== 重置发布表单 ==========
-        function resetPublishForm() {
-            uploadedImage = null;
-            previewImgItem.style.display = 'none';
-            addImgBtn.style.display = 'flex';
-            publishFileInput.value = '';
-            
-            productNameInput.value = '';
-            nameCount.textContent = '0/25';
-            productDescInput.value = '';
-            descCount.textContent = '0/100';
-            document.getElementById('contactInput').value = '';
-            document.getElementById('productSpecInput').value = '';
-            document.getElementById('productShelfLifeInput').value = '';
-            document.getElementById('productCategoryInput').value = '';
-            document.getElementById('productPackageInput').value = '';
-            document.getElementById('productPesticideInput').value = '';
-            document.getElementById('productStorageInput').value = '';
-            document.getElementById('productPickupInput').value = '';
-            
-            currentPrice = 0;
-            showPrice.textContent = '¥0.00';
-            currentPriceType = '以件计价';
-            showPriceType.textContent = '以件计价';
-            currentAddress = '一键定位';
-            showAddress.textContent = '一键定位';
         }
 
-        // ========== Tab栏跳转逻辑 ==========
-        tabItems.forEach(item => {
-            item.addEventListener('click', () => {
-                const targetPage = item.dataset.page;
-                switch(targetPage) {
-                    case 'goods':
-                        window.location.href = 'goods.html';
-                        break;
-                    case 'publish':
-                        window.location.href = 'publish.html';
-                        break;
-                    case 'mine':
-                        window.location.href = 'mine.html';
-                        break;
+        /**
+         * 重置发布表单
+         */
+        function resetPublishForm() {
+            // 重置图片
+            globalState.uploadedImageFile = null;
+            globalState.uploadedImageUrl = '';
+            domElements.previewImgItemEl.style.display = 'none';
+            domElements.addImgBtnEl.style.display = 'flex';
+            domElements.publishFileInputEl.value = '';
+
+            // 重置输入框
+            domElements.productNameInputEl.value = '';
+            domElements.nameCountEl.textContent = '0/25';
+            domElements.productDescInputEl.value = '';
+            domElements.descCountEl.textContent = '0/100';
+            domElements.contactInputEl.value = '';
+            domElements.productCategoryInputEl.value = '';
+            domElements.productSpecInputEl.value = '';
+            domElements.productShelfLifeInputEl.value = '';
+            domElements.productPackageInputEl.value = '';
+            domElements.productPesticideInputEl.value = '';
+            domElements.productStorageInputEl.value = '';
+            domElements.productPickupInputEl.value = '';
+
+            // 重置价格和地址
+            globalState.currentPrice = 0;
+            domElements.showPriceEl.textContent = '¥0.00';
+            globalState.currentPriceType = '以件计价';
+            domElements.showPriceTypeEl.textContent = '以件计价';
+            globalState.currentAddress = '一键定位';
+            domElements.showAddressEl.textContent = '一键定位';
+
+            // 重置商品类型
+            domElements.productTypeSelectEl.value = '蔬菜';
+        }
+
+        // ===================== 事件绑定 =====================
+        // 页面初始化
+        window.addEventListener('DOMContentLoaded', () => {
+            // 检查登录状态
+            checkLoginStatus();
+            if (!globalState.isLogin) {
+                showToast('您可先完善商品信息，发布时需登录哦', 3000);
+            }
+
+            // 字数统计
+            domElements.productNameInputEl.addEventListener('input', () => {
+                const len = domElements.productNameInputEl.value.length;
+                domElements.nameCountEl.textContent = `${len}/25`;
+            });
+
+            domElements.productDescInputEl.addEventListener('input', () => {
+                const len = domElements.productDescInputEl.value.length;
+                domElements.descCountEl.textContent = `${len}/100`;
+            });
+
+            // 返回按钮
+            domElements.publishBackBtnEl.addEventListener('click', () => {
+                window.location.href = 'goods.html';
+            });
+
+            // 发布按钮
+            domElements.publishSubmitBtnEl.addEventListener('click', async () => {
+                // 检查登录状态
+                if (!checkLoginStatus()) {
+                    openLoginTipModal();
+                    return;
                 }
+
+                // 表单验证
+                if (!validatePublishForm()) {
+                    return;
+                }
+
+                // 发布商品
+                await publishProduct();
+            });
+
+            // 登录提示弹窗
+            domElements.loginTipCancelBtnEl.addEventListener('click', () => {
+                domElements.loginTipModalEl.style.display = 'none';
+            });
+
+            domElements.loginTipConfirmBtnEl.addEventListener('click', () => {
+                domElements.loginTipModalEl.style.display = 'none';
+                window.location.href = 'login.html';
+            });
+
+            // Tab栏跳转
+            domElements.tabItemsEl.forEach(item => {
+                item.addEventListener('click', () => {
+                    const targetPage = item.dataset.page;
+                    switch(targetPage) {
+                        case 'goods':
+                            window.location.href = 'goods.html';
+                            break;
+                        case 'publish':
+                            window.location.href = 'publish.html';
+                            break;
+                        case 'mine':
+                            window.location.href = 'mine.html';
+                            break;
+                    }
+                });
             });
         });
     </script>

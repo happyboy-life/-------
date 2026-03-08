@@ -337,17 +337,28 @@
     <!-- 引入axios -->
     <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
-        // ========== 核心配置 & 模拟数据 ==========
-        const BASE_API_URL = 'http://localhost:8080/api';
-        let currentCity = ''; // 当前选中城市（改为空，优先从本地存储读取）
-        let currentCategory = '蔬菜'; // 当前选中分类
-        // 高德地图API Key - 已替换为你的Key
-        const AMAP_API_KEY = '8ba61a695f4c0a3aae1735f800032de3';
-        // 本地存储key（用于持久化定位结果）
-        const STORAGE_KEY = 'user_location_address';
+        // ========== 核心配置（命名规范 + 保留原有逻辑） ==========
+        // API基础配置
+        const API_CONFIG = {
+            baseUrl: 'http://localhost:8080/api',
+            timeout: 15000
+        };
+        // 全局状态（语义化命名）
+        const globalState = {
+            currentAddress: '', // 当前选中地址（原currentCity）
+            currentCategory: '蔬菜', // 当前选中分类
+            isLocationLoading: false // 定位加载状态（防重复定位）
+        };
+        // 常量定义（规范命名）
+        const CONSTANTS = {
+            AMAP_API_KEY: '8ba61a695f4c0a3aae1735f800032de3', // 高德API Key（保留原Key）
+            STORAGE_KEYS: {
+                USER_ADDRESS: 'user_location_address' // 本地存储地址Key
+            }
+        };
         
-        // 模拟商品列表数据
-        const mockGoodsList = [
+        // 模拟商品列表数据（保留原数据，仅重命名）
+        const mockProductList = [
             {
                 id: 1,
                 name: '500g-550g/份 云南小娃娃菜',
@@ -423,32 +434,43 @@
             }
         ];
 
-        // ========== DOM元素缓存 ==========
-        const toast = document.getElementById('toast');
-        const goodsList = document.getElementById('goodsList');
-        const loadingTip = document.getElementById('loadingTip');
-        const searchInput = document.getElementById('searchInput');
-        const searchBtn = document.getElementById('searchBtn');
-        const categoryItems = document.querySelectorAll('.category .item');
-        const cityBtn = document.getElementById('cityBtn');
-        const cityModal = document.getElementById('cityModal');
-        const cancelBtn = document.getElementById('cancelBtn');
-        const confirmBtn = document.getElementById('confirmBtn');
-        const autoLocationText = document.getElementById('autoLocationText');
-        const manualAddressInput = document.getElementById('manualAddressInput');
-        const tabItems = document.querySelectorAll('.tab-bar .tab-item');
+        // ========== DOM元素缓存（统一管理 + 语义化命名） ==========
+        const dom = {
+            toast: document.getElementById('toast'),
+            goodsList: document.getElementById('goodsList'),
+            loadingTip: document.getElementById('loadingTip'),
+            searchInput: document.getElementById('searchInput'),
+            searchBtn: document.getElementById('searchBtn'),
+            categoryItems: document.querySelectorAll('.category .item'),
+            cityBtn: document.getElementById('cityBtn'),
+            cityModal: document.getElementById('cityModal'),
+            cancelBtn: document.getElementById('cancelBtn'),
+            confirmBtn: document.getElementById('confirmBtn'),
+            autoLocationText: document.getElementById('autoLocationText'),
+            manualAddressInput: document.getElementById('manualAddressInput'),
+            tabItems: document.querySelectorAll('.tab-bar .tab-item')
+        };
 
-        // ========== 工具函数 ==========
-        // Toast提示
+        // ========== 工具函数（规范命名 + 保留原有逻辑） ==========
+        /**
+         * 显示Toast提示（原showToast，保留逻辑）
+         * @param {string} message - 提示内容
+         * @param {number} duration - 显示时长
+         */
         function showToast(message, duration = 2000) {
-            toast.textContent = message;
-            toast.style.display = 'block';
+            dom.toast.textContent = message;
+            dom.toast.style.display = 'block';
             setTimeout(() => {
-                toast.style.display = 'none';
+                dom.toast.style.display = 'none';
             }, duration);
         }
 
-        // 防抖函数
+        /**
+         * 防抖函数（原debounce，保留逻辑）
+         * @param {Function} fn - 执行函数
+         * @param {number} delay - 延迟时间
+         * @returns {Function} 防抖函数
+         */
         function debounce(fn, delay = 300) {
             let timer = null;
             return function(...args) {
@@ -459,38 +481,70 @@
             };
         }
 
-        // 从本地存储读取定位地址
+        /**
+         * 从本地存储读取定位地址（原getStoredAddress，保留逻辑）
+         * @returns {string} 存储的地址
+         */
         function getStoredAddress() {
-            return localStorage.getItem(STORAGE_KEY) || '';
+            return localStorage.getItem(CONSTANTS.STORAGE_KEYS.USER_ADDRESS) || '';
         }
 
-        // 保存定位地址到本地存储
+        /**
+         * 保存定位地址到本地存储（原saveAddressToStorage，保留逻辑）
+         * @param {string} address - 地址
+         */
         function saveAddressToStorage(address) {
-            localStorage.setItem(STORAGE_KEY, address);
+            localStorage.setItem(CONSTANTS.STORAGE_KEYS.USER_ADDRESS, address);
         }
 
-        // 经纬度转街道级地址（省+市+区+街道）
+        /**
+         * 统一API请求封装（新增：接入API，失败则用模拟数据）
+         * @param {string} url - API路径
+         * @param {object} params - 请求参数
+         * @returns {Promise} 请求结果
+         */
+        async function requestApi(url, params = {}) {
+            try {
+                const response = await axios({
+                    baseURL: API_CONFIG.baseUrl,
+                    url,
+                    method: 'GET',
+                    params,
+                    timeout: API_CONFIG.timeout
+                });
+                // 假设后端返回格式：{ code: 200, data: [...], msg: '' }
+                if (response.data.code === 200) {
+                    return response.data.data;
+                } else {
+                    showToast(`接口返回异常：${response.data.msg}`);
+                    return mockProductList; // 降级使用模拟数据
+                }
+            } catch (error) {
+                console.error('API请求失败：', error);
+                showToast('网络异常，使用本地模拟数据');
+                return mockProductList; // 降级使用模拟数据
+            }
+        }
+
+        // ========== 经纬度转街道级地址（完全保留原有逻辑） ==========
         async function getAddressByLngLat(lng, lat) {
             try {
                 const response = await axios.get('https://restapi.amap.com/v3/geocode/regeo', {
                     params: {
-                        key: AMAP_API_KEY,
+                        key: CONSTANTS.AMAP_API_KEY,
                         location: `${lng},${lat}`,
-                        extensions: 'all', // 关键：获取全部地址信息（包含街道）
+                        extensions: 'all',
                         batch: false,
                         roadlevel: 0
                     }
                 });
                 if (response.data.status === '1' && response.data.regeocode) {
-                    // 提取省+市+区+街道（精确到街道）
                     const addressComponent = response.data.regeocode.addressComponent;
                     const province = addressComponent.province || '';
                     const city = addressComponent.city || addressComponent.province || '';
                     const district = addressComponent.district || '';
                     const street = addressComponent.street || '';
-                    // 拼接完整地址（省+市+区+街道）
                     let fullAddress = `${province}${city}${district}${street}`;
-                    // 兜底：如果街道为空，至少显示到区
                     if (!street) {
                         fullAddress = `${province}${city}${district}`;
                     }
@@ -504,171 +558,166 @@
             }
         }
 
-        // ========== 商品列表渲染函数 ==========
-        function renderGoodsList(keyword = '') {
-            loadingTip.style.display = 'block';
+        // ========== 商品列表渲染（保留原有逻辑 + 接入API） ==========
+        async function renderProductList(keyword = '') {
+            dom.loadingTip.style.display = 'block';
             
-            // 模拟异步加载
-            setTimeout(() => {
-                try {
-                    let filteredGoods = [...mockGoodsList];
-                    
-                    // 分类筛选
-                    if (currentCategory !== '全部') {
-                        filteredGoods = filteredGoods.filter(item => item.variety === currentCategory);
-                    }
-                    
-                    // 关键词搜索
-                    if (keyword.trim()) {
-                        const lowerKeyword = keyword.toLowerCase();
-                        filteredGoods = filteredGoods.filter(item => 
-                            item.name.toLowerCase().includes(lowerKeyword) ||
-                            item.address.toLowerCase().includes(lowerKeyword) ||
-                            item.category.toLowerCase().includes(lowerKeyword)
-                        );
-                    }
-                    
-                    loadingTip.style.display = 'none';
-                    goodsList.innerHTML = '';
-                    
-                    // 无数据提示
-                    if (filteredGoods.length === 0) {
-                        goodsList.innerHTML = '<div class="loading-tip">暂无相关农产品</div>';
-                        return;
-                    }
-                    
-                    // 渲染商品列表（点击跳转到详情页）
-                    filteredGoods.forEach(item => {
-                        const goodsItem = document.createElement('div');
-                        goodsItem.className = 'goods-item';
-                        goodsItem.innerHTML = `
-                            <div class="name">${item.name}</div>
-                            <div class="spec">${item.spec}</div>
-                            <div class="price">¥${item.price.toFixed(2)}</div>
-                            <div class="origin">产地：${item.address}</div>
-                            <div class="contact">库存：${item.stock}件</div>
-                        `;
-                        goodsList.appendChild(goodsItem);
-                        
-                        // 点击跳转到详情页（携带商品ID）
-                        goodsItem.addEventListener('click', () => {
-                            window.location.href = `detail.html?id=${item.id}`;
-                        });
-                    });
-                } catch (error) {
-                    loadingTip.style.display = 'none';
-                    console.error('渲染商品列表失败：', error);
-                    goodsList.innerHTML = '<div class="loading-tip">加载失败，请重试</div>';
-                    showToast('加载失败，请重试');
+            try {
+                // 1. 调用API获取数据（新增：接入API，保留模拟数据降级）
+                const apiParams = {
+                    category: globalState.currentCategory,
+                    keyword: keyword.trim(),
+                    address: globalState.currentAddress
+                };
+                const productList = await requestApi('/products', apiParams);
+                
+                // 2. 筛选逻辑（完全保留原有逻辑）
+                let filteredProducts = [...productList];
+                if (globalState.currentCategory !== '全部') {
+                    filteredProducts = filteredProducts.filter(item => item.variety === globalState.currentCategory);
                 }
-            }, 500);
+                if (keyword.trim()) {
+                    const lowerKeyword = keyword.toLowerCase();
+                    filteredProducts = filteredProducts.filter(item => 
+                        item.name.toLowerCase().includes(lowerKeyword) ||
+                        item.address.toLowerCase().includes(lowerKeyword) ||
+                        item.category.toLowerCase().includes(lowerKeyword)
+                    );
+                }
+                
+                // 3. 渲染逻辑（完全保留原有逻辑）
+                dom.loadingTip.style.display = 'none';
+                dom.goodsList.innerHTML = '';
+                if (filteredProducts.length === 0) {
+                    dom.goodsList.innerHTML = '<div class="loading-tip">暂无相关农产品</div>';
+                    return;
+                }
+                filteredProducts.forEach(item => {
+                    const goodsItem = document.createElement('div');
+                    goodsItem.className = 'goods-item';
+                    goodsItem.innerHTML = `
+                        <div class="name">${item.name}</div>
+                        <div class="spec">${item.spec}</div>
+                        <div class="price">¥${item.price.toFixed(2)}</div>
+                        <div class="origin">产地：${item.address}</div>
+                        <div class="contact">库存：${item.stock}件</div>
+                    `;
+                    dom.goodsList.appendChild(goodsItem);
+                    goodsItem.addEventListener('click', () => {
+                        window.location.href = `detail.html?id=${item.id}`;
+                    });
+                });
+            } catch (error) {
+                dom.loadingTip.style.display = 'none';
+                console.error('渲染商品列表失败：', error);
+                dom.goodsList.innerHTML = '<div class="loading-tip">加载失败，请重试</div>';
+                showToast('加载失败，请重试');
+            }
         }
 
-        // ========== 城市选择弹窗逻辑（精确到街道 + 持久化） ==========
-        function initCityModal() {
+        // ========== 城市选择弹窗逻辑（完全保留原有定位方式 + 规范命名） ==========
+        function initAddressModal() {
             // 打开地址弹窗
-            cityBtn.addEventListener('click', async () => {
-                cityModal.style.display = 'flex';
-                autoLocationText.textContent = '正在定位...';
-                manualAddressInput.value = ''; // 清空手动输入框
+            dom.cityBtn.addEventListener('click', async () => {
+                // 防重复定位
+                if (globalState.isLocationLoading) return;
+                globalState.isLocationLoading = true;
                 
-                // 真实定位逻辑（精确到街道）
+                dom.cityModal.style.display = 'flex';
+                dom.autoLocationText.textContent = '正在定位...';
+                dom.manualAddressInput.value = '';
+                
+                // 真实定位逻辑（完全保留原有逻辑：前端高精度定位 + 高德逆地理编码）
                 if (navigator.geolocation) {
                     try {
-                        // 获取当前位置（开启高精度，精确到街道）
                         const position = await new Promise((resolve, reject) => {
                             navigator.geolocation.getCurrentPosition(
                                 resolve,
                                 reject,
                                 {
-                                    enableHighAccuracy: true, // 关键：开启高精度定位（精确到街道）
-                                    timeout: 10000, // 超时时间延长到10秒（高精度定位稍慢）
-                                    maximumAge: 0 // 不使用缓存，每次都获取最新位置
+                                    enableHighAccuracy: true,
+                                    timeout: 10000,
+                                    maximumAge: 0
                                 }
                             );
                         });
-                        
-                        // 获取经纬度（用于转街道级地址）
                         const lng = position.coords.longitude;
                         const lat = position.coords.latitude;
-                        // 转成省+市+区+街道地址
                         const address = await getAddressByLngLat(lng, lat);
-                        autoLocationText.textContent = address;
+                        dom.autoLocationText.textContent = address;
                     } catch (error) {
-                        // 定位失败处理
                         switch(error.code) {
                             case error.PERMISSION_DENIED:
-                                autoLocationText.textContent = '您拒绝了定位权限';
+                                dom.autoLocationText.textContent = '您拒绝了定位权限';
                                 showToast('请开启定位权限以获取精确地址');
                                 break;
                             case error.POSITION_UNAVAILABLE:
-                                autoLocationText.textContent = '定位信息不可用';
+                                dom.autoLocationText.textContent = '定位信息不可用';
                                 break;
                             case error.TIMEOUT:
-                                autoLocationText.textContent = '定位请求超时';
+                                dom.autoLocationText.textContent = '定位请求超时';
                                 break;
                             default:
-                                autoLocationText.textContent = '定位失败';
+                                dom.autoLocationText.textContent = '定位失败';
                         }
                     }
                 } else {
-                    autoLocationText.textContent = '您的浏览器不支持定位';
+                    dom.autoLocationText.textContent = '您的浏览器不支持定位';
                     showToast('当前浏览器不支持定位功能，请手动输入地址');
                 }
+                
+                globalState.isLocationLoading = false;
             });
 
-            // 取消按钮
-            cancelBtn.addEventListener('click', () => {
-                cityModal.style.display = 'none';
+            // 取消按钮（保留原有逻辑）
+            dom.cancelBtn.addEventListener('click', () => {
+                dom.cityModal.style.display = 'none';
             });
 
-            // 确认按钮（保存地址到本地存储）
-            confirmBtn.addEventListener('click', () => {
-                const address = manualAddressInput.value.trim() || autoLocationText.textContent;
-                // 过滤无效地址
+            // 确认按钮（保留原有逻辑 + 规范命名）
+            dom.confirmBtn.addEventListener('click', () => {
+                const address = dom.manualAddressInput.value.trim() || dom.autoLocationText.textContent;
                 const invalidAddresses = ['正在定位...', '您拒绝了定位权限', '定位信息不可用', '定位请求超时', '定位失败', '您的浏览器不支持定位'];
                 if (invalidAddresses.includes(address)) {
                     showToast('请输入有效的街道级地址（例：湖南省湘潭市岳塘区建设路街道）');
                     return;
                 }
-                // 更新当前地址并保存到本地存储
-                currentCity = address;
+                globalState.currentAddress = address;
                 saveAddressToStorage(address);
-                // 更新页面显示
-                cityBtn.textContent = address;
-                cityModal.style.display = 'none';
-                renderGoodsList(searchInput.value); // 重新加载列表
+                dom.cityBtn.textContent = address;
+                dom.cityModal.style.display = 'none';
+                renderProductList(dom.searchInput.value);
                 showToast(`已定位到：${address}`);
             });
         }
 
-        // ========== 搜索&分类逻辑 ==========
+        // ========== 搜索&分类逻辑（保留原有逻辑 + 规范命名） ==========
         function initSearchAndCategory() {
-            // 分类筛选
-            categoryItems.forEach(item => {
+            // 分类筛选（保留原有逻辑）
+            dom.categoryItems.forEach(item => {
                 item.addEventListener('click', () => {
-                    categoryItems.forEach(i => i.classList.remove('active'));
+                    dom.categoryItems.forEach(i => i.classList.remove('active'));
                     item.classList.add('active');
-                    currentCategory = item.dataset.category;
-                    renderGoodsList(searchInput.value); // 带关键词重新加载
+                    globalState.currentCategory = item.dataset.category;
+                    renderProductList(dom.searchInput.value);
                 });
             });
 
-            // 搜索功能
-            searchBtn.addEventListener('click', () => {
-                renderGoodsList(searchInput.value);
+            // 搜索功能（保留原有逻辑）
+            dom.searchBtn.addEventListener('click', () => {
+                renderProductList(dom.searchInput.value);
             });
 
-            searchInput.addEventListener('keyup', debounce((e) => {
+            dom.searchInput.addEventListener('keyup', debounce((e) => {
                 if (e.key === 'Enter') {
-                    renderGoodsList(searchInput.value);
+                    renderProductList(dom.searchInput.value);
                 }
             }));
         }
 
-        // ========== Tab栏跳转逻辑 ==========
+        // ========== Tab栏跳转逻辑（保留原有逻辑 + 规范命名） ==========
         function initTabBar() {
-            tabItems.forEach(item => {
+            dom.tabItems.forEach(item => {
                 item.addEventListener('click', () => {
                     const targetPage = item.dataset.page;
                     switch(targetPage) {
@@ -686,21 +735,21 @@
             });
         }
 
-        // ========== 页面初始化（优先读取本地存储的定位） ==========
+        // ========== 页面初始化（保留原有逻辑 + 规范命名） ==========
         document.addEventListener('DOMContentLoaded', () => {
             // 1. 优先读取本地存储的地址
             const storedAddress = getStoredAddress();
             if (storedAddress) {
-                currentCity = storedAddress;
-                cityBtn.textContent = storedAddress;
+                globalState.currentAddress = storedAddress;
+                dom.cityBtn.textContent = storedAddress;
                 showToast(`已恢复上次定位：${storedAddress}`);
             }
             
             // 2. 初始化各模块
-            initCityModal();
+            initAddressModal();
             initSearchAndCategory();
             initTabBar();
-            renderGoodsList();
+            renderProductList();
         });
     </script>
 </body>

@@ -341,9 +341,16 @@
     <!-- 提示弹窗 -->
     <div class="toast" id="toast"></div>
 
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
     <script>
-        // ========== 模拟商品数据 ==========
-        const mockGoodsList = [
+        // ========== 核心配置（规范命名 + 集中管理） ==========
+        // API配置
+        const API_CONFIG = {
+            baseUrl: 'http://localhost:8080/api',
+            timeout: 15000
+        };
+        // 模拟商品数据（语义化重命名）
+        const mockProductList = [
             {
                 id: 1,
                 name: '500g-550g/份 云南小娃娃菜',
@@ -419,110 +426,114 @@
             }
         ];
 
-        // ========== DOM元素缓存 ==========
-        const toast = document.getElementById('toast');
-        const detailBackBtn = document.getElementById('detailBackBtn');
-        const swiperWrapper = document.getElementById('swiperWrapper');
-        const swiperIndicator = document.getElementById('swiperIndicator');
-        const detailPriceNum = document.getElementById('detailPriceNum');
-        const detailPriceUnit = document.getElementById('detailPriceUnit');
-        const detailSales = document.getElementById('detailSales');
-        const detailProductName = document.getElementById('detailProductName');
-        const detailCategory = document.getElementById('detailCategory');
-        const detailSpec = document.getElementById('detailSpec');
-        const detailAddress = document.getElementById('detailAddress');
-        const detailShelfLife = document.getElementById('detailShelfLife');
-        const detailPackage = document.getElementById('detailPackage');
-        const detailPesticide = document.getElementById('detailPesticide');
-        const detailStorage = document.getElementById('detailStorage');
-        const detailPickup = document.getElementById('detailPickup');
-        const detailDescContent = document.getElementById('detailDescContent');
-        const contactName = document.getElementById('contactName');
-        const contactAddress = document.getElementById('contactAddress');
-        const contactPhone = document.getElementById('contactPhone');
-        const contactBtn = document.getElementById('contactBtn');
-        const viewAllBtn = document.getElementById('viewAllBtn');
-        const infoExpand = document.getElementById('infoExpand');
+        // ========== DOM元素缓存（统一管理 + 语义化命名） ==========
+        const dom = {
+            toast: document.getElementById('toast'),
+            backBtn: document.getElementById('detailBackBtn'),
+            swiperWrapper: document.getElementById('swiperWrapper'),
+            swiperIndicator: document.getElementById('swiperIndicator'),
+            priceNum: document.getElementById('detailPriceNum'),
+            priceUnit: document.getElementById('detailPriceUnit'),
+            sales: document.getElementById('detailSales'),
+            productName: document.getElementById('detailProductName'),
+            category: document.getElementById('detailCategory'),
+            spec: document.getElementById('detailSpec'),
+            address: document.getElementById('detailAddress'),
+            shelfLife: document.getElementById('detailShelfLife'),
+            packageMethod: document.getElementById('detailPackage'),
+            pesticideUsed: document.getElementById('detailPesticide'),
+            storageMethod: document.getElementById('detailStorage'),
+            supportPickup: document.getElementById('detailPickup'),
+            descContent: document.getElementById('detailDescContent'),
+            contactName: document.getElementById('contactName'),
+            contactAddress: document.getElementById('contactAddress'),
+            contactPhone: document.getElementById('contactPhone'),
+            contactBtn: document.getElementById('contactBtn'),
+            viewAllBtn: document.getElementById('viewAllBtn'),
+            infoExpand: document.getElementById('infoExpand')
+        };
 
-        // ========== 工具函数 ==========
-        // Toast提示
+        // ========== 工具函数（规范命名 + 保留原有逻辑） ==========
+        /**
+         * 显示Toast提示（原showToast，保留逻辑）
+         * @param {string} message - 提示内容
+         * @param {number} duration - 显示时长
+         */
         function showToast(message, duration = 2000) {
-            toast.textContent = message;
-            toast.style.display = 'block';
+            dom.toast.textContent = message;
+            dom.toast.style.display = 'block';
             setTimeout(() => {
-                toast.style.display = 'none';
+                dom.toast.style.display = 'none';
             }, duration);
         }
 
-        // ========== 获取URL参数 ==========
-        function getUrlParam(name) {
+        /**
+         * 获取URL参数（原getUrlParam，语义化重命名）
+         * @param {string} name - 参数名
+         * @returns {string|null} 参数值
+         */
+        function getUrlParameter(name) {
             const searchParams = new URLSearchParams(window.location.search);
             return searchParams.get(name);
         }
 
-        // ========== 渲染详情页数据 ==========
-        function renderDetailPage() {
-            const goodsId = getUrlParam('id');
-            if (!goodsId) {
-                showToast('商品ID不存在');
-                setTimeout(() => {
-                    window.location.href = 'goods.html';
-                }, 1500);
-                return;
+        /**
+         * 统一API请求封装（新增：接入API，失败降级为模拟数据）
+         * @param {string} productId - 商品ID
+         * @returns {Promise} 商品详情数据
+         */
+        async function requestProductDetail(productId) {
+            try {
+                const response = await axios({
+                    baseURL: API_CONFIG.baseUrl,
+                    url: `/products/${productId}`,
+                    method: 'GET',
+                    timeout: API_CONFIG.timeout
+                });
+                // 假设后端返回格式：{ code: 200, data: {...}, msg: '' }
+                if (response.data.code === 200) {
+                    return response.data.data;
+                } else {
+                    showToast(`接口返回异常：${response.data.msg}`);
+                    // 降级到模拟数据
+                    return mockProductList.find(item => item.id == productId) || null;
+                }
+            } catch (error) {
+                console.error('商品详情API请求失败：', error);
+                showToast('网络异常，使用本地模拟数据');
+                // 降级到模拟数据
+                return mockProductList.find(item => item.id == productId) || null;
             }
+        }
 
-            // 查找对应商品
-            const goods = mockGoodsList.find(item => item.id == goodsId);
-            if (!goods) {
-                showToast('商品不存在');
-                setTimeout(() => {
-                    window.location.href = 'goods.html';
-                }, 1500);
-                return;
-            }
-
-            // 填充基本信息
-            detailPriceNum.textContent = `¥${goods.price.toFixed(2)}`;
-            detailPriceUnit.textContent = '/份';
-            detailSales.textContent = `已售${goods.sales}`;
-            detailProductName.textContent = goods.name;
-            detailCategory.textContent = goods.category;
-            detailSpec.textContent = goods.spec;
-            detailAddress.textContent = goods.address;
-            detailShelfLife.textContent = goods.shelf_life;
-            detailPackage.textContent = goods.package_method;
-            detailPesticide.textContent = goods.pesticide_used;
-            detailStorage.textContent = goods.storage_method;
-            detailPickup.textContent = goods.support_pickup;
-            detailDescContent.textContent = goods.description;
-            contactName.textContent = goods.seller_name;
-            contactAddress.textContent = goods.seller_address;
-            contactPhone.textContent = `电话：${goods.seller_phone}`;
-
-            // 渲染图片轮播
-            swiperWrapper.innerHTML = '';
-            swiperIndicator.innerHTML = '';
-            goods.images.forEach((imgUrl, index) => {
+        /**
+         * 初始化图片轮播（保留原有逻辑 + 封装函数）
+         * @param {Array} images - 图片地址数组
+         */
+        function initImageSwiper(images) {
+            dom.swiperWrapper.innerHTML = '';
+            dom.swiperIndicator.innerHTML = '';
+            
+            // 渲染图片和指示器
+            images.forEach((imgUrl, index) => {
                 // 图片项
                 const swiperItem = document.createElement('div');
                 swiperItem.className = `swiper-item ${index === 0 ? 'active' : ''}`;
                 swiperItem.innerHTML = `<img src="${imgUrl}" alt="商品图片${index+1}">`;
-                swiperWrapper.appendChild(swiperItem);
+                dom.swiperWrapper.appendChild(swiperItem);
 
                 // 指示器
                 const indicatorDot = document.createElement('div');
                 indicatorDot.className = `indicator-dot ${index === 0 ? 'active' : ''}`;
-                swiperIndicator.appendChild(indicatorDot);
+                dom.swiperIndicator.appendChild(indicatorDot);
             });
 
-            // 图片轮播逻辑
+            // 自动轮播逻辑（完全保留原有逻辑）
             let currentIndex = 0;
-            const totalImages = goods.images.length;
-            
-            // 自动轮播
+            const totalImages = images.length;
             setInterval(() => {
                 currentIndex = (currentIndex + 1) % totalImages;
-                swiperWrapper.style.transform = `translateX(-${currentIndex * 100}%)`;
+                dom.swiperWrapper.style.transform = `translateX(-${currentIndex * 100}%)`;
                 
                 // 更新指示器
                 document.querySelectorAll('.indicator-dot').forEach((dot, idx) => {
@@ -531,26 +542,74 @@
             }, 3000);
         }
 
-        // ========== 事件绑定 ==========
-        // 返回按钮
-        detailBackBtn.addEventListener('click', () => {
-            window.location.href = 'goods.html';
-        });
+        // ========== 渲染商品详情（保留原有逻辑 + 接入API） ==========
+        async function renderProductDetail() {
+            const productId = getUrlParameter('id');
+            
+            // 校验商品ID
+            if (!productId) {
+                showToast('商品ID不存在');
+                setTimeout(() => {
+                    window.location.href = 'goods.html';
+                }, 1500);
+                return;
+            }
 
-        // 查看全部/收起
-        viewAllBtn.addEventListener('click', () => {
-            infoExpand.classList.toggle('show-all');
-            viewAllBtn.textContent = infoExpand.classList.contains('show-all') ? '收起' : '查看全部';
-        });
+            // 优先调用API，失败降级到模拟数据
+            const product = await requestProductDetail(productId);
+            if (!product) {
+                showToast('商品不存在');
+                setTimeout(() => {
+                    window.location.href = 'goods.html';
+                }, 1500);
+                return;
+            }
 
-        // 联系卖家按钮
-        contactBtn.addEventListener('click', () => {
-            showToast('已复制卖家联系方式到剪贴板');
-        });
+            // 填充页面数据（完全保留原有逻辑）
+            dom.priceNum.textContent = `¥${product.price.toFixed(2)}`;
+            dom.priceUnit.textContent = '/份';
+            dom.sales.textContent = `已售${product.sales}`;
+            dom.productName.textContent = product.name;
+            dom.category.textContent = product.category;
+            dom.spec.textContent = product.spec;
+            dom.address.textContent = product.address;
+            dom.shelfLife.textContent = product.shelf_life;
+            dom.packageMethod.textContent = product.package_method;
+            dom.pesticideUsed.textContent = product.pesticide_used;
+            dom.storageMethod.textContent = product.storage_method;
+            dom.supportPickup.textContent = product.support_pickup;
+            dom.descContent.textContent = product.description;
+            dom.contactName.textContent = product.seller_name;
+            dom.contactAddress.textContent = product.seller_address;
+            dom.contactPhone.textContent = `电话：${product.seller_phone}`;
 
-        // ========== 页面初始化 ==========
+            // 初始化图片轮播
+            initImageSwiper(product.images);
+        }
+
+        // ========== 事件绑定（保留原有逻辑 + 规范命名） ==========
+        function bindEvents() {
+            // 返回按钮（保留原有逻辑）
+            dom.backBtn.addEventListener('click', () => {
+                window.location.href = 'goods.html';
+            });
+
+            // 查看全部/收起（保留原有逻辑）
+            dom.viewAllBtn.addEventListener('click', () => {
+                dom.infoExpand.classList.toggle('show-all');
+                dom.viewAllBtn.textContent = dom.infoExpand.classList.contains('show-all') ? '收起' : '查看全部';
+            });
+
+            // 联系卖家按钮（保留原有逻辑）
+            dom.contactBtn.addEventListener('click', () => {
+                showToast('已复制卖家联系方式到剪贴板');
+            });
+        }
+
+        // ========== 页面初始化（保留原有逻辑 + 规范命名） ==========
         document.addEventListener('DOMContentLoaded', () => {
-            renderDetailPage();
+            bindEvents();
+            renderProductDetail();
         });
     </script>
 </body>
