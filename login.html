@@ -51,6 +51,16 @@
             color: #000;
             border: 1px solid #e5e7eb;
         }
+        /* 新增：稍后登录按钮样式（文字型按钮，更轻量化） */
+        .btn-later {
+            height: 40px;
+            background-color: transparent;
+            color: #007AFF;
+            font-size: 16px;
+        }
+        .btn-later:hover {
+            background-color: rgba(0, 122, 255, 0.08);
+        }
 
         /* 2. 登录表单容器 */
         #loginContainer {
@@ -218,6 +228,8 @@
     <section id="welcomeSection" class="page-section active">
         <button class="welcome-btn btn-primary" id="signUpBtn">Sign up</button>
         <button class="welcome-btn btn-default" id="loginBtn">Log in</button>
+        <!-- 新增：稍后登录按钮 -->
+        <button class="welcome-btn btn-later" id="laterLoginBtn">稍后登录</button>
     </section>
 
     <!-- 登录容器 -->
@@ -306,6 +318,16 @@
         document.getElementById('loginBtn').addEventListener('click', () => {
             welcomeSection.classList.remove('active');
             loginContainer.classList.add('active');
+        });
+
+        // 新增：稍后登录功能逻辑
+        document.getElementById('laterLoginBtn').addEventListener('click', () => {
+            // 标记为游客模式（方便后续页面判断用户身份）
+            localStorage.setItem('userType', 'guest');
+            // 提示用户游客模式的限制
+            alert('已进入游客模式，您可以浏览商品但无法进行下单、收藏等操作，如需完整功能请登录');
+            // 跳转到商品列表页（可根据实际需求修改目标页面）
+            window.location.href = 'goods.html';
         });
 
         // 2. 登录方式切换
@@ -434,6 +456,8 @@
                 // 登录成功：存储用户信息 + 跳转主页面（index.html）
                 if (response.ok && result.code === 200) {
                     localStorage.setItem('userInfo', JSON.stringify(result.data));
+                    // 登录成功后清除游客标记
+                    localStorage.removeItem('userType');
                     alert('手机号登录成功！即将跳转到首页');
                     window.location.href = 'goods.html';
                 } else {
@@ -480,6 +504,8 @@
                 // 登录成功：存储用户信息 + 跳转主页面（index.html）
                 if (response.ok && result.code === 200) {
                     localStorage.setItem('userInfo', JSON.stringify(result.data));
+                    // 登录成功后清除游客标记
+                    localStorage.removeItem('userType');
                     alert('密码登录成功！即将跳转到首页');
                     window.location.href = 'index.html';
                 } else {
